@@ -46,11 +46,23 @@
         .sentiment-positive { color: #28a745; }
         .sentiment-negative { color: #dc3545; }
         .sentiment-neutral { color: #6c757d; }
+        .demo-notice {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid #ffeeba;
+        }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1 class="mb-4">Market Analysis Dashboard 3</h1>
+        <h1 class="mb-4">Market Analysis Dashboard v4</h1>
+        
+        <div class="demo-notice">
+            <strong>Demo Mode:</strong> This application is running with mock data. In a production environment, you would connect to real financial data APIs.
+        </div>
         
         <div class="d-grid gap-2">
             <button id="startAnalysis" class="btn btn-primary btn-lg">
@@ -305,6 +317,9 @@
                 const newsData = await newsResponse.json();
                 
                 addStatusUpdate(`Fetched ${newsData.articles.length} news articles`);
+                if (newsData.source === 'Mock Data') {
+                    addStatusUpdate('Using mock news data for demonstration purposes');
+                }
                 updateProgress(40);
                 
                 // Step 2: Extract mentioned tickers and analyze sentiment
@@ -361,6 +376,7 @@
                 }
                 
                 const stockData = await stockResponse.json();
+                addStatusUpdate('Using simulated stock price data for demonstration');
                 
                 updateProgress(80);
                 

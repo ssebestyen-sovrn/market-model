@@ -7,8 +7,8 @@ This guide will help you deploy the Market Analysis Tool to Vercel and fix any i
 1. A [Vercel](https://vercel.com) account
 2. A [GitHub](https://github.com) account (recommended for easier deployment)
 3. API keys for:
-   - [NewsAPI](https://newsapi.org) (for news data)
-   - [Alpha Vantage](https://www.alphavantage.co) (optional, for stock data)
+   - [NewsAPI](https://newsapi.org) (optional, mock data is used by default)
+   - [Alpha Vantage](https://www.alphavantage.co) (optional, mock data is used by default)
 
 ## Deployment Steps
 
@@ -28,11 +28,26 @@ This guide will help you deploy the Market Analysis Tool to Vercel and fix any i
    - **Output Directory**: `.` (root directory)
    - **Install Command**: Leave empty
 
-5. Add Environment Variables:
-   - `NEWS_API_KEY`: Your NewsAPI key
-   - `ALPHA_VANTAGE_API_KEY`: Your Alpha Vantage API key (optional)
+5. Add Environment Variables (optional):
+   - `NEWS_API_KEY`: Your NewsAPI key (if you want to use real data)
+   - `ALPHA_VANTAGE_API_KEY`: Your Alpha Vantage API key (if you want to use real data)
+   - `USE_MOCK_DATA`: Set to "false" if you want to use real API data (requires valid API keys)
 
 6. Click "Deploy"
+
+## Understanding the Mock Data Approach
+
+By default, this application uses mock data for both news articles and stock prices. This approach has several benefits:
+
+1. **No API Keys Required**: You can deploy and test the application without signing up for external APIs.
+2. **No CORS Issues**: The NewsAPI free tier doesn't allow browser-based requests, but our serverless functions can handle this.
+3. **Consistent Demo Experience**: The mock data ensures that users always see meaningful results.
+
+To use real data instead of mock data:
+
+1. Sign up for API keys from NewsAPI and Alpha Vantage
+2. Add these keys as environment variables in your Vercel project
+3. Set the `USE_MOCK_DATA` environment variable to "false"
 
 ## Fixing Common Issues
 
@@ -97,7 +112,7 @@ If you're still having issues after deployment:
 
 3. Update API URLs in Frontend:
    - Make sure your frontend is using the correct API URLs
-   - For production, use relative paths like `/api/news` instead of absolute URLs
+   - For production, use the full URL with `window.location.origin` as shown in the code
 
 ## Testing the Deployed Application
 
@@ -110,4 +125,20 @@ After deployment:
 5. Look for any failed requests to `/api/news` or `/api/stocks`
 6. Check the response content of these requests for errors
 
-If you see HTML responses instead of JSON, it means Vercel is serving the index.html file instead of executing your API function. 
+## Using the Application with Real Data
+
+If you want to use real data instead of mock data:
+
+1. Sign up for API keys:
+   - [NewsAPI](https://newsapi.org/register) - Free tier available
+   - [Alpha Vantage](https://www.alphavantage.co/support/#api-key) - Free tier available
+
+2. Add these keys to your Vercel project:
+   - Go to your project settings
+   - Navigate to the "Environment Variables" section
+   - Add `NEWS_API_KEY` and `ALPHA_VANTAGE_API_KEY` with your API keys
+   - Add `USE_MOCK_DATA` with value "false"
+
+3. Redeploy your application
+
+Note that the free tier of NewsAPI doesn't allow browser-based requests, but our serverless functions can make server-side requests to the API. 
