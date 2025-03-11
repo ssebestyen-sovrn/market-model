@@ -50,7 +50,7 @@
 </head>
 <body>
     <div class="dashboard">
-        <h1 class="mb-4">Market Analysis Dashboard 2</h1>
+        <h1 class="mb-4">Market Analysis Dashboard 3</h1>
         
         <div class="d-grid gap-2">
             <button id="startAnalysis" class="btn btn-primary btn-lg">
@@ -285,11 +285,23 @@
                 addStatusUpdate('Fetching news articles...');
                 updateProgress(20);
                 
-                const newsResponse = await fetch('/api/news');
+                // Get the base URL for API calls
+                const baseUrl = window.location.origin;
+                
+                // Use the full URL for API calls
+                const newsResponse = await fetch(`${baseUrl}/api/news`);
                 if (!newsResponse.ok) {
-                    const errorData = await newsResponse.json();
-                    throw new Error(`Failed to fetch news: ${errorData.error || newsResponse.statusText}`);
+                    // Try to parse the error response as JSON
+                    try {
+                        const errorData = await newsResponse.json();
+                        throw new Error(`Failed to fetch news: ${errorData.error || newsResponse.statusText}`);
+                    } catch (jsonError) {
+                        // If it's not JSON, get the text response
+                        const errorText = await newsResponse.text();
+                        throw new Error(`Failed to fetch news: Non-JSON response received. Status: ${newsResponse.status}. Check the API endpoint.`);
+                    }
                 }
+                
                 const newsData = await newsResponse.json();
                 
                 addStatusUpdate(`Fetched ${newsData.articles.length} news articles`);
@@ -334,11 +346,20 @@
                     throw new Error('No stock tickers found in news articles');
                 }
                 
-                const stockResponse = await fetch(`/api/stocks?tickers=${mentionedTickers.join(',')}`);
+                // Use the full URL for API calls
+                const stockResponse = await fetch(`${baseUrl}/api/stocks?tickers=${mentionedTickers.join(',')}`);
                 if (!stockResponse.ok) {
-                    const errorData = await stockResponse.json();
-                    throw new Error(`Failed to fetch stock data: ${errorData.error || stockResponse.statusText}`);
+                    // Try to parse the error response as JSON
+                    try {
+                        const errorData = await stockResponse.json();
+                        throw new Error(`Failed to fetch stock data: ${errorData.error || stockResponse.statusText}`);
+                    } catch (jsonError) {
+                        // If it's not JSON, get the text response
+                        const errorText = await stockResponse.text();
+                        throw new Error(`Failed to fetch stock data: Non-JSON response received. Status: ${stockResponse.status}. Check the API endpoint.`);
+                    }
                 }
+                
                 const stockData = await stockResponse.json();
                 
                 updateProgress(80);
