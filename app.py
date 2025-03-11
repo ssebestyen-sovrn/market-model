@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory, Response
+from flask import Flask, jsonify, send_from_directory, Response, request
 from market_analyzer import MarketAnalyzer
 import os
 import json
@@ -7,7 +7,8 @@ import threading
 from datetime import datetime
 from flask_cors import CORS
 
-app = Flask(__name__, static_folder='.')
+# Create Flask app with correct static folder configuration
+app = Flask(__name__, static_folder=os.path.dirname(os.path.abspath(__file__)))
 CORS(app)  # Enable CORS for all routes
 progress_queues = {}
 
@@ -39,6 +40,14 @@ def generate_status_updates(queue_id):
 def index():
     return send_from_directory('.', 'index.html')
 
+# Add a route to serve static files
+@app.route('/<path:path>')
+def serve_static(path):
+    try:
+        return send_from_directory('.', path)
+    except Exception as e:
+        return f"Error serving {path}: {str(e)}", 404
+
 @app.route('/status/<queue_id>')
 def status(queue_id):
     return Response(
@@ -51,8 +60,12 @@ def status(queue_id):
         }
     )
 
-@app.route('/run_analysis', methods=['POST'])
+@app.route('/run_analysis', methods=['POST', 'OPTIONS'])
 def run_analysis():
+    # Handle CORS preflight requests
+    if request.method == 'OPTIONS':
+        return '', 204
+        
     try:
         queue_id = str(threading.get_ident())
         status_queue = queue.Queue()
@@ -146,6 +159,11 @@ def run_analysis():
         print(f"Error starting analysis: {str(e)}\n{traceback_str}")
         return jsonify({'error': str(e), 'traceback': traceback_str}), 500
 
+# Add a route to check server status
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "ok", "server": "Market Analysis Tool"})
+
 if __name__ == '__main__':
     # Add Flask command line options
     import sys
@@ -161,6 +179,10 @@ if __name__ == '__main__':
             print("Added flask-cors to requirements.txt")
     except Exception as e:
         print(f"Warning: Could not update requirements.txt: {e}")
+    
+    # Print server information
+    print(f"Server running at http://localhost:5000")
+    print(f"Working directory: {os.path.abspath('.')}")
     
     # Run the app
     app.run(debug=debug, host='0.0.0.0', port=5000, threaded=True) 
