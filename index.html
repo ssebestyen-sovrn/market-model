@@ -6,7 +6,6 @@
     <title>Market Analysis Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -47,23 +46,11 @@
         .sentiment-positive { color: #28a745; }
         .sentiment-negative { color: #dc3545; }
         .sentiment-neutral { color: #6c757d; }
-        .api-url-container {
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <h1 class="mb-4">Market Analysis Dashboard</h1>
-        
-        <div class="api-url-container">
-            <div class="input-group mb-3">
-                <span class="input-group-text">API Server URL</span>
-                <input type="text" id="apiUrl" class="form-control" placeholder="Enter your API server URL (e.g., http://your-server:5000)" value="">
-                <button class="btn btn-outline-secondary" type="button" id="testConnection">Test Connection</button>
-            </div>
-            <div class="form-text">Enter the URL of your backend API server. This should be the address where your Flask server is running.</div>
-        </div>
+        <h1 class="mb-4">Market Analysis Dashboard 2</h1>
         
         <div class="d-grid gap-2">
             <button id="startAnalysis" class="btn btn-primary btn-lg">
@@ -106,56 +93,19 @@
 
     <script>
         let analysisInProgress = false;
-        let supabase = null;
-        let pollingInterval = null;
         
-        // Initialize Supabase client
+        // Check for previous analysis results
         document.addEventListener('DOMContentLoaded', () => {
-            const savedApiUrl = localStorage.getItem('apiUrl');
-            if (savedApiUrl) {
-                document.getElementById('apiUrl').value = savedApiUrl;
-            }
-            
-            // Check for Supabase credentials in URL (for development)
-            const urlParams = new URLSearchParams(window.location.search);
-            const supabaseUrl = urlParams.get('supabaseUrl');
-            const supabaseKey = urlParams.get('supabaseKey');
-            
-            if (supabaseUrl && supabaseKey) {
-                initializeSupabase(supabaseUrl, supabaseKey);
+            const savedResults = localStorage.getItem('lastAnalysisResults');
+            if (savedResults) {
+                try {
+                    const results = JSON.parse(savedResults);
+                    addStatusUpdate('Found previous analysis results. Click "Start Market Analysis" to run a new analysis.');
+                } catch (error) {
+                    console.error('Error parsing saved results:', error);
+                }
             }
         });
-        
-        function initializeSupabase(url, key) {
-            try {
-                supabase = supabase.createClient(url, key);
-                addStatusUpdate(`✅ Supabase client initialized`);
-                
-                // Check if user is signed in
-                checkAuthStatus();
-            } catch (error) {
-                console.error('Supabase initialization error:', error);
-                addStatusUpdate(`❌ Failed to initialize Supabase: ${error.message}`);
-            }
-        }
-        
-        async function checkAuthStatus() {
-            try {
-                const { data, error } = await supabase.auth.getSession();
-                
-                if (error) throw error;
-                
-                if (data.session) {
-                    addStatusUpdate(`✅ Signed in as: ${data.session.user.email}`);
-                } else {
-                    addStatusUpdate(`ℹ️ Not signed in. Please sign in to use the application.`);
-                    // Show sign-in UI here
-                }
-            } catch (error) {
-                console.error('Auth status error:', error);
-                addStatusUpdate(`❌ Auth error: ${error.message}`);
-            }
-        }
 
         function addStatusUpdate(message) {
             const statusDiv = document.createElement('div');
@@ -180,7 +130,7 @@
 
             // Check if we have data to display
             if (Object.keys(correlations).length === 0 || Object.keys(predictions).length === 0) {
-                addStatusUpdate("No analysis data available. This may be a simplified demo result.");
+                addStatusUpdate("No analysis data available. This may be due to limited data in the news articles.");
                 return;
             }
 
@@ -279,70 +229,44 @@
                 });
         }
 
-        // Test connection to Supabase
-        document.getElementById('testConnection').addEventListener('click', async () => {
-            const apiUrl = document.getElementById('apiUrl').value.trim();
-            if (!apiUrl) {
-                addStatusUpdate('Please enter a Supabase URL');
-                return;
-            }
+        // Simplified sentiment analysis function
+        function analyzeSentiment(text) {
+            // This is a very basic sentiment analysis
+            // In a real app, you'd use a more sophisticated library
+            const positiveWords = ['up', 'increase', 'growth', 'positive', 'gain', 'profit', 'success', 'bullish', 'strong', 'higher'];
+            const negativeWords = ['down', 'decrease', 'fall', 'negative', 'loss', 'fail', 'risk', 'bearish', 'weak', 'lower'];
             
-            // Parse the URL to extract Supabase URL and key
-            try {
-                // Format should be: https://your-project.supabase.co?key=your-anon-key
-                const url = new URL(apiUrl);
-                const supabaseUrl = url.origin;
-                const supabaseKey = url.searchParams.get('key');
-                
-                if (!supabaseKey) {
-                    addStatusUpdate('Please include the anon key in the URL as a query parameter: ?key=your-anon-key');
-                    return;
-                }
-                
-                // Save to localStorage
-                localStorage.setItem('apiUrl', apiUrl);
-                
-                addStatusUpdate(`Testing connection to Supabase at ${supabaseUrl}...`);
-                
-                // Initialize Supabase client
-                initializeSupabase(supabaseUrl, supabaseKey);
-                
-                // Test connection by calling the health function
-                try {
-                    const { data, error } = await supabase.functions.invoke('health');
-                    
-                    if (error) {
-                        throw error;
-                    }
-                    
-                    addStatusUpdate(`✅ Connection successful! Server status: ${data.status}`);
-                } catch (error) {
-                    console.error('Function error:', error);
-                    addStatusUpdate(`❌ Connection failed: ${error.message}`);
-                    addStatusUpdate(`Make sure you've deployed the Edge Functions to your Supabase project.`);
-                }
-            } catch (error) {
-                console.error('URL parsing error:', error);
-                addStatusUpdate(`❌ Invalid URL format: ${error.message}`);
-                addStatusUpdate(`URL should be in the format: https://your-project.supabase.co?key=your-anon-key`);
-            }
-        });
+            let score = 0;
+            const words = text.toLowerCase().split(/\s+/);
+            
+            words.forEach(word => {
+                if (positiveWords.includes(word)) score += 1;
+                if (negativeWords.includes(word)) score -= 1;
+            });
+            
+            return score / Math.max(words.length, 1); // Normalize by text length
+        }
+        
+        // Simplified stock prediction function
+        function predictStockMovement(priceHistory, sentiment) {
+            // Very simplified prediction model
+            // In a real app, you'd use a more sophisticated algorithm
+            const lastPrice = priceHistory[priceHistory.length - 1];
+            const priceChange = priceHistory[priceHistory.length - 1] - priceHistory[0];
+            const momentum = priceChange / Math.max(priceHistory[0], 0.01);
+            
+            // Simple formula combining recent momentum and sentiment
+            const prediction = lastPrice * (1 + (momentum * 0.5) + (sentiment * 0.5));
+            
+            return {
+                current_price: lastPrice,
+                predicted_price: prediction,
+                predicted_change_percent: ((prediction - lastPrice) / lastPrice) * 100
+            };
+        }
 
         document.getElementById('startAnalysis').addEventListener('click', async () => {
             if (analysisInProgress) return;
-            
-            if (!supabase) {
-                addStatusUpdate('Please connect to Supabase first');
-                return;
-            }
-            
-            // Check if user is signed in
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                addStatusUpdate('Please sign in to run an analysis');
-                return;
-            }
-            
             analysisInProgress = true;
 
             const button = document.getElementById('startAnalysis');
@@ -353,102 +277,113 @@
             document.getElementById('resultsContainer').style.display = 'none';
             
             // Add initial status update
-            addStatusUpdate('Initializing analysis...');
-            updateProgress(5);
+            addStatusUpdate('Starting analysis...');
+            updateProgress(10);
 
             try {
-                // Call the run-analysis function
-                const { data, error } = await supabase.functions.invoke('run-analysis');
+                // Step 1: Fetch news data from our serverless function
+                addStatusUpdate('Fetching news articles...');
+                updateProgress(20);
                 
-                if (error) {
-                    throw new Error(`Failed to start analysis: ${error.message}`);
+                const newsResponse = await fetch('/api/news');
+                if (!newsResponse.ok) {
+                    const errorData = await newsResponse.json();
+                    throw new Error(`Failed to fetch news: ${errorData.error || newsResponse.statusText}`);
+                }
+                const newsData = await newsResponse.json();
+                
+                addStatusUpdate(`Fetched ${newsData.articles.length} news articles`);
+                updateProgress(40);
+                
+                // Step 2: Extract mentioned tickers and analyze sentiment
+                addStatusUpdate('Analyzing news sentiment...');
+                const tickerMentions = {};
+                
+                // Simplified list of S&P 500 tickers
+                const sp500Tickers = [
+                    'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'TSLA', 'NVDA', 'JPM', 'V', 'UNH',
+                    'JNJ', 'WMT', 'PG', 'MA', 'HD', 'BAC', 'XOM', 'AVGO', 'CVX', 'COST'
+                ];
+                
+                newsData.articles.forEach(article => {
+                    const text = `${article.title || ''} ${article.description || ''}`;
+                    const sentiment = analyzeSentiment(text);
+                    
+                    sp500Tickers.forEach(ticker => {
+                        if (text.includes(ticker)) {
+                            if (!tickerMentions[ticker]) {
+                                tickerMentions[ticker] = [];
+                            }
+                            
+                            tickerMentions[ticker].push({
+                                sentiment,
+                                title: article.title,
+                                publishedAt: article.publishedAt
+                            });
+                        }
+                    });
+                });
+                
+                updateProgress(60);
+                
+                // Step 3: Fetch stock data for mentioned tickers
+                addStatusUpdate('Fetching stock data...');
+                const mentionedTickers = Object.keys(tickerMentions);
+                
+                if (mentionedTickers.length === 0) {
+                    throw new Error('No stock tickers found in news articles');
                 }
                 
-                if (!data || !data.analysis_id) {
-                    throw new Error('Invalid response: missing analysis ID');
+                const stockResponse = await fetch(`/api/stocks?tickers=${mentionedTickers.join(',')}`);
+                if (!stockResponse.ok) {
+                    const errorData = await stockResponse.json();
+                    throw new Error(`Failed to fetch stock data: ${errorData.error || stockResponse.statusText}`);
                 }
-
-                const analysisId = data.analysis_id;
-                addStatusUpdate(`Analysis started with ID: ${analysisId}`);
-                updateProgress(10);
+                const stockData = await stockResponse.json();
                 
-                // Start polling for updates
-                startPolling(analysisId);
+                updateProgress(80);
+                
+                // Step 4: Generate predictions
+                addStatusUpdate('Generating predictions...');
+                const predictions = {};
+                
+                Object.entries(tickerMentions).forEach(([ticker, articles]) => {
+                    if (stockData[ticker] && stockData[ticker].prices && stockData[ticker].prices.length > 0) {
+                        const avgSentiment = articles.reduce((sum, a) => sum + a.sentiment, 0) / articles.length;
+                        predictions[ticker] = predictStockMovement(stockData[ticker].prices, avgSentiment);
+                    }
+                });
+                
+                // Step 5: Prepare results
+                const results = {
+                    timestamp: new Date().toISOString(),
+                    analysis: {
+                        news_articles_analyzed: newsData.articles.length,
+                        stocks_analyzed: Object.keys(predictions).length,
+                        correlations: tickerMentions,
+                        predictions: predictions
+                    }
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('lastAnalysisResults', JSON.stringify(results));
+                
+                updateProgress(100);
+                addStatusUpdate('Analysis complete!');
+                
+                // Display results
+                displayResults(results);
                 
             } catch (error) {
                 console.error('Analysis error:', error);
                 addStatusUpdate(`Error: ${error.message}`);
                 updateProgress(100);
+            } finally {
                 button.disabled = false;
                 button.textContent = 'Start Market Analysis';
                 analysisInProgress = false;
             }
         });
-        
-        function startPolling(analysisId) {
-            // Clear any existing polling
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-            }
-            
-            // Poll every 2 seconds
-            pollingInterval = setInterval(async () => {
-                try {
-                    const { data, error } = await supabase.functions.invoke('get-analysis', {
-                        body: { id: analysisId }
-                    });
-                    
-                    if (error) {
-                        throw error;
-                    }
-                    
-                    // Update progress
-                    if (data.progress) {
-                        updateProgress(data.progress);
-                    }
-                    
-                    // Update status
-                    if (data.status) {
-                        addStatusUpdate(`Status: ${data.status}`);
-                    }
-                    
-                    // Check if analysis is complete
-                    if (data.status === 'completed' && data.results) {
-                        clearInterval(pollingInterval);
-                        pollingInterval = null;
-                        
-                        addStatusUpdate('Analysis complete!');
-                        updateProgress(100);
-                        
-                        // Display results
-                        displayResults(data.results);
-                        
-                        // Reset UI
-                        document.getElementById('startAnalysis').disabled = false;
-                        document.getElementById('startAnalysis').textContent = 'Start Market Analysis';
-                        analysisInProgress = false;
-                    }
-                    
-                    // Check if analysis failed
-                    if (data.status === 'error') {
-                        clearInterval(pollingInterval);
-                        pollingInterval = null;
-                        
-                        throw new Error(data.error_message || 'Analysis failed');
-                    }
-                    
-                } catch (error) {
-                    console.error('Polling error:', error);
-                    addStatusUpdate(`Error: ${error.message}`);
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
-                    
-                    document.getElementById('startAnalysis').disabled = false;
-                    document.getElementById('startAnalysis').textContent = 'Start Market Analysis';
-                    analysisInProgress = false;
-                }
-            }, 2000);
-        }
     </script>
 </body>
 </html>
