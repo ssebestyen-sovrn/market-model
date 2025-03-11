@@ -220,51 +220,92 @@
 
             document.getElementById('statusUpdates').innerHTML = '';
             document.getElementById('resultsContainer').style.display = 'none';
+            
+            // Add initial status update
+            addStatusUpdate('Initializing analysis...');
+            updateProgress(5);
+
+            let eventSource = null;
 
             try {
                 // Start the analysis
                 const response = await fetch('/run_analysis', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).catch(error => {
+                    console.error('Fetch error:', error);
+                    throw new Error('Failed to connect to server. Please check if the server is running.');
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to start analysis');
+                    const errorText = await response.text();
+                    console.error('Server error:', errorText);
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
                 }
 
-                const { queue_id } = await response.json();
+                const data = await response.json().catch(error => {
+                    console.error('JSON parse error:', error);
+                    throw new Error('Failed to parse server response');
+                });
+                
+                if (!data.queue_id) {
+                    throw new Error('Invalid server response: missing queue ID');
+                }
+
+                const queue_id = data.queue_id;
+                addStatusUpdate(`Analysis started with ID: ${queue_id}`);
                 
                 // Connect to SSE stream
-                const eventSource = new EventSource(`/status/${queue_id}`);
+                eventSource = new EventSource(`/status/${queue_id}`);
                 
                 eventSource.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    
-                    if (data.status) {
-                        addStatusUpdate(data.status);
-                    }
-                    
-                    if (data.progress !== undefined) {
-                        updateProgress(data.progress);
-                    }
-                    
-                    if (data.result) {
-                        displayResults(data.result);
-                        eventSource.close();
-                    }
-                    
-                    if (data.error) {
-                        throw new Error(data.status);
+                    try {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.status) {
+                            addStatusUpdate(data.status);
+                        }
+                        
+                        if (data.progress !== undefined) {
+                            updateProgress(data.progress);
+                        }
+                        
+                        if (data.result) {
+                            displayResults(data.result);
+                            if (eventSource) {
+                                eventSource.close();
+                                eventSource = null;
+                            }
+                        }
+                        
+                        if (data.error) {
+                            throw new Error(data.status);
+                        }
+                    } catch (error) {
+                        console.error('Event processing error:', error);
+                        addStatusUpdate(`Error processing update: ${error.message}`);
                     }
                 };
                 
                 eventSource.onerror = (error) => {
-                    eventSource.close();
-                    throw new Error('Connection to server lost');
+                    console.error('EventSource error:', error);
+                    addStatusUpdate('Connection to server lost. The analysis may still be running in the background.');
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
                 };
                 
             } catch (error) {
+                console.error('Overall error:', error);
                 addStatusUpdate(`Error: ${error.message}`);
                 updateProgress(100);
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
             } finally {
                 button.disabled = false;
                 button.textContent = 'Start Market Analysis';

@@ -5,11 +5,17 @@ import json
 import queue
 import threading
 from datetime import datetime
+from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.')
+CORS(app)  # Enable CORS for all routes
 progress_queues = {}
 
 def generate_status_updates(queue_id):
+    if queue_id not in progress_queues:
+        yield f"data: {json.dumps({'status': 'Error: Invalid queue ID', 'error': True})}\n\n"
+        return
+        
     q = progress_queues[queue_id]
     while True:
         try:
@@ -19,7 +25,14 @@ def generate_status_updates(queue_id):
                 break
             yield f"data: {json.dumps(status)}\n\n"
         except queue.Empty:
-            del progress_queues[queue_id]
+            yield f"data: {json.dumps({'status': 'Timeout waiting for updates', 'error': True})}\n\n"
+            if queue_id in progress_queues:
+                del progress_queues[queue_id]
+            break
+        except Exception as e:
+            yield f"data: {json.dumps({'status': f'Error: {str(e)}', 'error': True})}\n\n"
+            if queue_id in progress_queues:
+                del progress_queues[queue_id]
             break
 
 @app.route('/')
@@ -33,7 +46,8 @@ def status(queue_id):
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*'
         }
     )
 
@@ -46,6 +60,12 @@ def run_analysis():
 
         def run_analysis_with_updates():
             try:
+                # Initial status update
+                status_queue.put({
+                    "status": "Starting analysis...",
+                    "progress": 10
+                })
+                
                 analyzer = MarketAnalyzer()
                 
                 # Update status for fetching news
@@ -102,6 +122,10 @@ def run_analysis():
                 status_queue.put("DONE")
                 
             except Exception as e:
+                import traceback
+                traceback_str = traceback.format_exc()
+                print(f"Error in analysis thread: {str(e)}\n{traceback_str}")
+                
                 status_queue.put({
                     "status": f"Error: {str(e)}",
                     "progress": 100,
@@ -109,13 +133,34 @@ def run_analysis():
                 })
                 status_queue.put("DONE")
 
+        # Start the analysis in a background thread
         thread = threading.Thread(target=run_analysis_with_updates)
+        thread.daemon = True  # Make thread a daemon so it doesn't block app shutdown
         thread.start()
         
-        return jsonify({"queue_id": queue_id})
+        return jsonify({"queue_id": queue_id, "status": "Analysis started"})
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        traceback_str = traceback.format_exc()
+        print(f"Error starting analysis: {str(e)}\n{traceback_str}")
+        return jsonify({'error': str(e), 'traceback': traceback_str}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    # Add Flask command line options
+    import sys
+    debug = '--debug' in sys.argv
+    
+    # Update requirements.txt
+    try:
+        with open('requirements.txt', 'r') as f:
+            requirements = f.read()
+        if 'flask-cors' not in requirements.lower():
+            with open('requirements.txt', 'a') as f:
+                f.write('\nflask-cors==4.0.0\n')
+            print("Added flask-cors to requirements.txt")
+    except Exception as e:
+        print(f"Warning: Could not update requirements.txt: {e}")
+    
+    # Run the app
+    app.run(debug=debug, host='0.0.0.0', port=5000, threaded=True) 
