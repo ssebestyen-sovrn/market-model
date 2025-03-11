@@ -9,7 +9,7 @@ from flask_cors import CORS
 
 # Create Flask app with correct static folder configuration
 app = Flask(__name__, static_folder=os.path.dirname(os.path.abspath(__file__)))
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/*": {"origins": "*"}})  # Enable CORS for all routes and all origins
 progress_queues = {}
 
 def generate_status_updates(queue_id):
@@ -56,7 +56,9 @@ def status(queue_id):
         headers={
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
         }
     )
 
@@ -64,7 +66,11 @@ def status(queue_id):
 def run_analysis():
     # Handle CORS preflight requests
     if request.method == 'OPTIONS':
-        return '', 204
+        response = app.make_default_options_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        return response
         
     try:
         queue_id = str(threading.get_ident())
@@ -151,18 +157,29 @@ def run_analysis():
         thread.daemon = True  # Make thread a daemon so it doesn't block app shutdown
         thread.start()
         
-        return jsonify({"queue_id": queue_id, "status": "Analysis started"})
+        response = jsonify({"queue_id": queue_id, "status": "Analysis started"})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
         
     except Exception as e:
         import traceback
         traceback_str = traceback.format_exc()
         print(f"Error starting analysis: {str(e)}\n{traceback_str}")
-        return jsonify({'error': str(e), 'traceback': traceback_str}), 500
+        response = jsonify({'error': str(e), 'traceback': traceback_str}), 500
+        response[0].headers['Access-Control-Allow-Origin'] = '*'
+        return response
 
 # Add a route to check server status
 @app.route('/health')
 def health_check():
-    return jsonify({"status": "ok", "server": "Market Analysis Tool"})
+    response = jsonify({
+        "status": "ok", 
+        "server": "Market Analysis Tool",
+        "version": "1.0.0",
+        "cors_enabled": True
+    })
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 if __name__ == '__main__':
     # Add Flask command line options
@@ -180,9 +197,12 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Warning: Could not update requirements.txt: {e}")
     
+    # Get port from environment variable or use default
+    port = int(os.environ.get('PORT', 5000))
+    
     # Print server information
-    print(f"Server running at http://localhost:5000")
+    print(f"Server running at http://0.0.0.0:{port}")
     print(f"Working directory: {os.path.abspath('.')}")
     
     # Run the app
-    app.run(debug=debug, host='0.0.0.0', port=5000, threaded=True) 
+    app.run(debug=debug, host='0.0.0.0', port=port, threaded=True) 

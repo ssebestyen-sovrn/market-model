@@ -6,6 +6,7 @@
     <title>Market Analysis Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -46,11 +47,23 @@
         .sentiment-positive { color: #28a745; }
         .sentiment-negative { color: #dc3545; }
         .sentiment-neutral { color: #6c757d; }
+        .api-url-container {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
     <div class="dashboard">
         <h1 class="mb-4">Market Analysis Dashboard</h1>
+        
+        <div class="api-url-container">
+            <div class="input-group mb-3">
+                <span class="input-group-text">API Server URL</span>
+                <input type="text" id="apiUrl" class="form-control" placeholder="Enter your API server URL (e.g., http://your-server:5000)" value="">
+                <button class="btn btn-outline-secondary" type="button" id="testConnection">Test Connection</button>
+            </div>
+            <div class="form-text">Enter the URL of your backend API server. This should be the address where your Flask server is running.</div>
+        </div>
         
         <div class="d-grid gap-2">
             <button id="startAnalysis" class="btn btn-primary btn-lg">
@@ -93,6 +106,56 @@
 
     <script>
         let analysisInProgress = false;
+        let supabase = null;
+        let pollingInterval = null;
+        
+        // Initialize Supabase client
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedApiUrl = localStorage.getItem('apiUrl');
+            if (savedApiUrl) {
+                document.getElementById('apiUrl').value = savedApiUrl;
+            }
+            
+            // Check for Supabase credentials in URL (for development)
+            const urlParams = new URLSearchParams(window.location.search);
+            const supabaseUrl = urlParams.get('supabaseUrl');
+            const supabaseKey = urlParams.get('supabaseKey');
+            
+            if (supabaseUrl && supabaseKey) {
+                initializeSupabase(supabaseUrl, supabaseKey);
+            }
+        });
+        
+        function initializeSupabase(url, key) {
+            try {
+                supabase = supabase.createClient(url, key);
+                addStatusUpdate(`✅ Supabase client initialized`);
+                
+                // Check if user is signed in
+                checkAuthStatus();
+            } catch (error) {
+                console.error('Supabase initialization error:', error);
+                addStatusUpdate(`❌ Failed to initialize Supabase: ${error.message}`);
+            }
+        }
+        
+        async function checkAuthStatus() {
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) throw error;
+                
+                if (data.session) {
+                    addStatusUpdate(`✅ Signed in as: ${data.session.user.email}`);
+                } else {
+                    addStatusUpdate(`ℹ️ Not signed in. Please sign in to use the application.`);
+                    // Show sign-in UI here
+                }
+            } catch (error) {
+                console.error('Auth status error:', error);
+                addStatusUpdate(`❌ Auth error: ${error.message}`);
+            }
+        }
 
         function addStatusUpdate(message) {
             const statusDiv = document.createElement('div');
@@ -114,6 +177,12 @@
             // Process correlations and predictions
             const correlations = data.analysis.correlations;
             const predictions = data.analysis.predictions;
+
+            // Check if we have data to display
+            if (Object.keys(correlations).length === 0 || Object.keys(predictions).length === 0) {
+                addStatusUpdate("No analysis data available. This may be a simplified demo result.");
+                return;
+            }
 
             // Prepare data for sentiment chart
             const sentimentData = Object.entries(correlations)
@@ -210,8 +279,70 @@
                 });
         }
 
+        // Test connection to Supabase
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            if (!apiUrl) {
+                addStatusUpdate('Please enter a Supabase URL');
+                return;
+            }
+            
+            // Parse the URL to extract Supabase URL and key
+            try {
+                // Format should be: https://your-project.supabase.co?key=your-anon-key
+                const url = new URL(apiUrl);
+                const supabaseUrl = url.origin;
+                const supabaseKey = url.searchParams.get('key');
+                
+                if (!supabaseKey) {
+                    addStatusUpdate('Please include the anon key in the URL as a query parameter: ?key=your-anon-key');
+                    return;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('apiUrl', apiUrl);
+                
+                addStatusUpdate(`Testing connection to Supabase at ${supabaseUrl}...`);
+                
+                // Initialize Supabase client
+                initializeSupabase(supabaseUrl, supabaseKey);
+                
+                // Test connection by calling the health function
+                try {
+                    const { data, error } = await supabase.functions.invoke('health');
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    addStatusUpdate(`✅ Connection successful! Server status: ${data.status}`);
+                } catch (error) {
+                    console.error('Function error:', error);
+                    addStatusUpdate(`❌ Connection failed: ${error.message}`);
+                    addStatusUpdate(`Make sure you've deployed the Edge Functions to your Supabase project.`);
+                }
+            } catch (error) {
+                console.error('URL parsing error:', error);
+                addStatusUpdate(`❌ Invalid URL format: ${error.message}`);
+                addStatusUpdate(`URL should be in the format: https://your-project.supabase.co?key=your-anon-key`);
+            }
+        });
+
         document.getElementById('startAnalysis').addEventListener('click', async () => {
             if (analysisInProgress) return;
+            
+            if (!supabase) {
+                addStatusUpdate('Please connect to Supabase first');
+                return;
+            }
+            
+            // Check if user is signed in
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                addStatusUpdate('Please sign in to run an analysis');
+                return;
+            }
+            
             analysisInProgress = true;
 
             const button = document.getElementById('startAnalysis');
@@ -225,106 +356,99 @@
             addStatusUpdate('Initializing analysis...');
             updateProgress(5);
 
-            let eventSource = null;
-
             try {
-                // Check server health first
-                try {
-                    const healthResponse = await fetch('/health');
-                    if (!healthResponse.ok) {
-                        throw new Error(`Server health check failed: ${healthResponse.status}`);
-                    }
-                    addStatusUpdate('Server health check passed');
-                } catch (error) {
-                    console.error('Health check error:', error);
-                    addStatusUpdate('Server health check failed. Attempting analysis anyway...');
+                // Call the run-analysis function
+                const { data, error } = await supabase.functions.invoke('run-analysis');
+                
+                if (error) {
+                    throw new Error(`Failed to start analysis: ${error.message}`);
+                }
+                
+                if (!data || !data.analysis_id) {
+                    throw new Error('Invalid response: missing analysis ID');
                 }
 
-                // Start the analysis with absolute URL
-                const serverUrl = window.location.origin; // Get the base URL
-                const response = await fetch(`${serverUrl}/run_analysis`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }).catch(error => {
-                    console.error('Fetch error:', error);
-                    throw new Error('Failed to connect to server. Please check if the server is running.');
-                });
+                const analysisId = data.analysis_id;
+                addStatusUpdate(`Analysis started with ID: ${analysisId}`);
+                updateProgress(10);
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Server error:', errorText);
-                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
-                }
-
-                const data = await response.json().catch(error => {
-                    console.error('JSON parse error:', error);
-                    throw new Error('Failed to parse server response');
-                });
-                
-                if (!data.queue_id) {
-                    throw new Error('Invalid server response: missing queue ID');
-                }
-
-                const queue_id = data.queue_id;
-                addStatusUpdate(`Analysis started with ID: ${queue_id}`);
-                
-                // Connect to SSE stream with absolute URL
-                eventSource = new EventSource(`${serverUrl}/status/${queue_id}`);
-                
-                eventSource.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.status) {
-                            addStatusUpdate(data.status);
-                        }
-                        
-                        if (data.progress !== undefined) {
-                            updateProgress(data.progress);
-                        }
-                        
-                        if (data.result) {
-                            displayResults(data.result);
-                            if (eventSource) {
-                                eventSource.close();
-                                eventSource = null;
-                            }
-                        }
-                        
-                        if (data.error) {
-                            throw new Error(data.status);
-                        }
-                    } catch (error) {
-                        console.error('Event processing error:', error);
-                        addStatusUpdate(`Error processing update: ${error.message}`);
-                    }
-                };
-                
-                eventSource.onerror = (error) => {
-                    console.error('EventSource error:', error);
-                    addStatusUpdate('Connection to server lost. The analysis may still be running in the background.');
-                    if (eventSource) {
-                        eventSource.close();
-                        eventSource = null;
-                    }
-                };
+                // Start polling for updates
+                startPolling(analysisId);
                 
             } catch (error) {
-                console.error('Overall error:', error);
+                console.error('Analysis error:', error);
                 addStatusUpdate(`Error: ${error.message}`);
                 updateProgress(100);
-                if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
-                }
-            } finally {
                 button.disabled = false;
                 button.textContent = 'Start Market Analysis';
                 analysisInProgress = false;
             }
         });
+        
+        function startPolling(analysisId) {
+            // Clear any existing polling
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+            
+            // Poll every 2 seconds
+            pollingInterval = setInterval(async () => {
+                try {
+                    const { data, error } = await supabase.functions.invoke('get-analysis', {
+                        body: { id: analysisId }
+                    });
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    // Update progress
+                    if (data.progress) {
+                        updateProgress(data.progress);
+                    }
+                    
+                    // Update status
+                    if (data.status) {
+                        addStatusUpdate(`Status: ${data.status}`);
+                    }
+                    
+                    // Check if analysis is complete
+                    if (data.status === 'completed' && data.results) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        
+                        addStatusUpdate('Analysis complete!');
+                        updateProgress(100);
+                        
+                        // Display results
+                        displayResults(data.results);
+                        
+                        // Reset UI
+                        document.getElementById('startAnalysis').disabled = false;
+                        document.getElementById('startAnalysis').textContent = 'Start Market Analysis';
+                        analysisInProgress = false;
+                    }
+                    
+                    // Check if analysis failed
+                    if (data.status === 'error') {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        
+                        throw new Error(data.error_message || 'Analysis failed');
+                    }
+                    
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    addStatusUpdate(`Error: ${error.message}`);
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    
+                    document.getElementById('startAnalysis').disabled = false;
+                    document.getElementById('startAnalysis').textContent = 'Start Market Analysis';
+                    analysisInProgress = false;
+                }
+            }, 2000);
+        }
     </script>
 </body>
 </html>
