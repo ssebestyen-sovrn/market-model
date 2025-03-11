@@ -1,5 +1,7 @@
 // Vercel serverless function to fetch news articles
-module.exports = async (req, res) => {
+import fetch from 'node-fetch';
+
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,7 +67,7 @@ module.exports = async (req, res) => {
     // Return mock data on error to ensure the frontend still works
     return res.status(200).json(generateMockNewsData());
   }
-};
+}
 
 // Function to generate mock news data
 function generateMockNewsData() {

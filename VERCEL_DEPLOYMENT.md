@@ -35,6 +35,22 @@ This guide will help you deploy the Market Analysis Tool to Vercel and fix any i
 
 6. Click "Deploy"
 
+## Understanding the Project Structure
+
+This application uses:
+
+1. **Static HTML/CSS/JavaScript** for the frontend
+2. **Node.js Serverless Functions** for the backend API endpoints
+3. **Mock Data** by default to avoid API dependencies
+
+The key files are:
+
+- `index.html` - The main frontend application
+- `api/news.js` - Serverless function for fetching news articles
+- `api/stocks.js` - Serverless function for fetching stock data
+- `vercel.json` - Configuration for Vercel deployment
+- `package.json` - Node.js dependencies
+
 ## Understanding the Mock Data Approach
 
 By default, this application uses mock data for both news articles and stock prices. This approach has several benefits:
@@ -65,7 +81,8 @@ This error occurs when the API endpoint is returning HTML instead of JSON, typic
   "functions": {
     "api/*.js": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 10,
+      "runtime": "nodejs18.x"
     }
   },
   "routes": [
@@ -80,13 +97,24 @@ This error occurs when the API endpoint is returning HTML instead of JSON, typic
 
 ```javascript
 // Example structure for api/news.js
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   // ... rest of your code
-};
+}
 ```
+
+### Python Dependency Errors
+
+If you see errors related to Python dependencies like:
+
+```
+ERROR: Could not find a version that satisfies the requirement torch==2.1.2
+ERROR: No matching distribution found for torch==2.1.2
+```
+
+This is because our application now uses Node.js serverless functions instead of Python. The `requirements.txt` file has been simplified to only include minimal dependencies, and the actual API functionality is implemented in JavaScript.
 
 ### Testing API Endpoints Locally
 

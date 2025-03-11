@@ -6,7 +6,7 @@ A web-based tool for analyzing market sentiment and predicting stock price movem
 
 This application analyzes news articles for mentions of stock tickers, performs sentiment analysis on the articles, and generates price predictions based on the sentiment and historical price data.
 
-The application is designed to be deployed on Vercel, using serverless functions for the backend API and a static HTML/JavaScript frontend.
+The application is designed to be deployed on Vercel, using Node.js serverless functions for the backend API and a static HTML/JavaScript frontend.
 
 ## Features
 
@@ -30,6 +30,7 @@ For detailed deployment instructions, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYME
 - `api/news.js` - Serverless function for fetching news articles
 - `api/stocks.js` - Serverless function for fetching stock data
 - `vercel.json` - Configuration for Vercel deployment
+- `package.json` - Node.js dependencies
 
 ## Using Real Data
 
@@ -44,7 +45,7 @@ To use real data instead of mock data:
 - HTML, CSS, JavaScript
 - Bootstrap for UI components
 - Chart.js for data visualization
-- Vercel Serverless Functions for backend API
+- Node.js Serverless Functions for backend API
 - NewsAPI for news data (optional)
 - Alpha Vantage for stock data (optional)
 
