@@ -1,0 +1,96 @@
+{
+  "news": [
+    {
+      "id": 1,
+      "title": "Tech Giants Report Strong Quarterly Earnings",
+      "description": "Major technology companies exceeded analyst expectations with their latest quarterly results.",
+      "source": "Financial Times",
+      "url": "#",
+      "publishedAt": "2023-07-28T14:30:00Z",
+      "sentiment": "positive",
+      "relatedCompanies": ["AAPL", "MSFT", "GOOGL"]
+    },
+    {
+      "id": 2,
+      "title": "Federal Reserve Signals Potential Rate Hike",
+      "description": "The Federal Reserve indicated it may raise interest rates in response to persistent inflation concerns.",
+      "source": "Wall Street Journal",
+      "url": "#",
+      "publishedAt": "2023-07-27T10:15:00Z",
+      "sentiment": "negative",
+      "relatedCompanies": ["JPM", "BAC", "GS"]
+    },
+    {
+      "id": 3,
+      "title": "Oil Prices Stabilize After Recent Volatility",
+      "description": "Crude oil prices have stabilized following weeks of fluctuation due to supply chain disruptions.",
+      "source": "Reuters",
+      "url": "#",
+      "publishedAt": "2023-07-26T16:45:00Z",
+      "sentiment": "neutral",
+      "relatedCompanies": ["XOM", "CVX", "BP"]
+    },
+    {
+      "id": 4,
+      "title": "Retail Sales Show Modest Growth in June",
+      "description": "Consumer spending increased slightly in June, indicating resilience in the retail sector.",
+      "source": "Bloomberg",
+      "url": "#",
+      "publishedAt": "2023-07-25T09:20:00Z",
+      "sentiment": "positive",
+      "relatedCompanies": ["WMT", "TGT", "AMZN"]
+    },
+    {
+      "id": 5,
+      "title": "Healthcare Stocks Decline on Policy Uncertainty",
+      "description": "Shares of major healthcare companies fell as investors reacted to potential regulatory changes.",
+      "source": "CNBC",
+      "url": "#",
+      "publishedAt": "2023-07-24T13:10:00Z",
+      "sentiment": "negative",
+      "relatedCompanies": ["JNJ", "PFE", "UNH"]
+    },
+    {
+      "id": 6,
+      "title": "New Infrastructure Bill Gains Bipartisan Support",
+      "description": "A proposed infrastructure spending package has received backing from both political parties.",
+      "source": "The New York Times",
+      "url": "#",
+      "publishedAt": "2023-07-23T11:30:00Z",
+      "sentiment": "positive",
+      "relatedCompanies": ["CAT", "DE", "URI"]
+    }
+  ],
+  "market": [
+    {"date": "2023-07-01", "value": 4200.00, "change": 15.20, "percentChange": 0.36},
+    {"date": "2023-07-02", "value": 4215.20, "change": -8.30, "percentChange": -0.20},
+    {"date": "2023-07-03", "value": 4206.90, "change": 5.10, "percentChange": 0.12},
+    {"date": "2023-07-04", "value": 4212.00, "change": 0.00, "percentChange": 0.00},
+    {"date": "2023-07-05", "value": 4212.00, "change": 18.50, "percentChange": 0.44},
+    {"date": "2023-07-06", "value": 4230.50, "change": 10.20, "percentChange": 0.24},
+    {"date": "2023-07-07", "value": 4240.70, "change": -5.80, "percentChange": -0.14},
+    {"date": "2023-07-08", "value": 4234.90, "change": -12.30, "percentChange": -0.29},
+    {"date": "2023-07-09", "value": 4222.60, "change": 7.40, "percentChange": 0.18},
+    {"date": "2023-07-10", "value": 4230.00, "change": 3.20, "percentChange": 0.08},
+    {"date": "2023-07-11", "value": 4233.20, "change": 9.50, "percentChange": 0.22},
+    {"date": "2023-07-12", "value": 4242.70, "change": 15.80, "percentChange": 0.37},
+    {"date": "2023-07-13", "value": 4258.50, "change": 20.10, "percentChange": 0.47},
+    {"date": "2023-07-14", "value": 4278.60, "change": -7.90, "percentChange": -0.18},
+    {"date": "2023-07-15", "value": 4270.70, "change": 5.30, "percentChange": 0.12},
+    {"date": "2023-07-16", "value": 4276.00, "change": 8.20, "percentChange": 0.19},
+    {"date": "2023-07-17", "value": 4284.20, "change": -3.50, "percentChange": -0.08},
+    {"date": "2023-07-18", "value": 4280.70, "change": -15.20, "percentChange": -0.36},
+    {"date": "2023-07-19", "value": 4265.50, "change": -22.80, "percentChange": -0.53},
+    {"date": "2023-07-20", "value": 4242.70, "change": -18.30, "percentChange": -0.43},
+    {"date": "2023-07-21", "value": 4224.40, "change": -5.10, "percentChange": -0.12},
+    {"date": "2023-07-22", "value": 4219.30, "change": 12.70, "percentChange": 0.30},
+    {"date": "2023-07-23", "value": 4232.00, "change": 17.50, "percentChange": 0.41},
+    {"date": "2023-07-24", "value": 4249.50, "change": -8.20, "percentChange": -0.19},
+    {"date": "2023-07-25", "value": 4241.30, "change": 5.70, "percentChange": 0.13},
+    {"date": "2023-07-26", "value": 4247.00, "change": 0.80, "percentChange": 0.02},
+    {"date": "2023-07-27", "value": 4247.80, "change": -12.50, "percentChange": -0.29},
+    {"date": "2023-07-28", "value": 4235.30, "change": 18.20, "percentChange": 0.43},
+    {"date": "2023-07-29", "value": 4253.50, "change": 7.30, "percentChange": 0.17},
+    {"date": "2023-07-30", "value": 4260.80, "change": 4.20, "percentChange": 0.10}
+  ]
+} 

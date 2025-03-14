@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "name": "market-news-analyzer",
+  "builds": [
+    {
+      "src": "**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "github": {
+    "silent": true
+  }
+} 
