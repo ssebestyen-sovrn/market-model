@@ -40,11 +40,13 @@ market-model/
 ├── js/
 │   ├── api.js
 │   ├── analysis.js
+│   ├── config.js
 │   ├── visualization.js
 │   └── main.js
 ├── data/
 │   └── sample-data.json
 ├── index.html
+├── supabase-schema.sql
 └── README.md
 ```
 
@@ -73,32 +75,50 @@ This project is configured for easy deployment on Vercel:
 
 ## Supabase Integration
 
-The project is prepared for Supabase integration. To connect to Supabase:
+This project is now integrated with Supabase for real data storage and retrieval. Follow these steps to set up:
 
 1. Create a Supabase account at [Supabase](https://supabase.com)
 2. Create a new project
-3. Get your API URL and public API key
-4. Create a table called `analysis_results` with appropriate columns
-5. Update the `api.js` file to use the Supabase client:
+3. Get your API URL and public anon key
+4. Create the required tables using the SQL in `supabase-schema.sql`
+5. Update the `js/config.js` file with your Supabase credentials:
 
 ```javascript
-// Add to the top of api.js
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseKey = 'YOUR_SUPABASE_KEY';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Then update the saveAnalysisResults function
-saveAnalysisResults: async (analysisResults) => {
-    const { data, error } = await supabase
-        .from('analysis_results')
-        .insert([analysisResults]);
-    
-    if (error) throw error;
-    return data;
-}
+const CONFIG = {
+    // Supabase configuration
+    supabase: {
+        url: 'YOUR_SUPABASE_URL',
+        anonKey: 'YOUR_SUPABASE_ANON_KEY',
+    },
+    // Other config...
+};
 ```
+
+### Supabase Schema
+
+The project uses three main tables in Supabase:
+
+1. `news_articles` - Stores news stories with sentiment analysis
+2. `market_data` - Stores historical market data (S&P 500)
+3. `analysis_results` - Stores the results of correlation analyses
+
+The schema includes example data for testing. See `supabase-schema.sql` for details.
+
+### Adding Real News Data
+
+To add real news data to your Supabase database:
+
+1. Access your Supabase project
+2. Go to the SQL Editor
+3. Insert news data using SQL commands similar to:
+
+```sql
+INSERT INTO news_articles (title, description, source, url, publishedAt, sentiment, relatedCompanies)
+VALUES 
+('Your News Title', 'Description of the news', 'Source Name', 'https://newsurl.com', NOW(), 'positive', '["TICKER1", "TICKER2"]');
+```
+
+Alternatively, you can use the Supabase UI to insert data manually or set up a data collection pipeline.
 
 ## Future Enhancements
 
