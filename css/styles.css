@@ -7,7 +7,6 @@ body {
 
 .navbar-brand {
     font-weight: bold;
-    font-size: 0.8rem;
 }
 
 .card {
@@ -34,18 +33,6 @@ body {
 
 .btn-primary:hover {
     background-color: #0b5ed7;
-}
-
-.btn-outline-secondary {
-    padding: 10px 20px;
-    font-weight: 500;
-    border-color: #6c757d;
-    color: #6c757d;
-}
-
-.btn-outline-secondary:hover {
-    background-color: #6c757d;
-    color: white;
 }
 
 .news-card {

@@ -27,7 +27,9 @@ This tool uses news data to analyze correlations with S&P 500 market movements a
 - HTML, CSS, JavaScript
 - Bootstrap 5 for UI components
 - Chart.js for data visualization
-- Mock data for demonstration (can be replaced with real APIs)
+- Alpha Vantage API for real S&P 500 market data
+- NewsAPI.org for real-time business news data
+- Basic sentiment analysis for news articles
 - Vercel for hosting
 - Supabase (prepared for integration)
 
@@ -55,6 +57,24 @@ To run this project locally:
 1. Clone the repository
 2. Open the project folder
 3. Open `index.html` in your browser
+
+## API Integration
+
+This project uses real-time data from multiple APIs:
+
+### Alpha Vantage
+Used to fetch real S&P 500 market data for the past 7 days. The application will fall back to sample data if the API rate limit is exceeded or if there's an error with the API request.
+
+To use your own Alpha Vantage API key:
+1. Get a free API key from [Alpha Vantage](https://www.alphavantage.co/support/#api-key)
+2. Replace the 'demo' key in js/api.js with your actual API key
+
+### NewsAPI.org
+Used to fetch the latest business news from the US with sentiment analysis. The application performs basic sentiment analysis on the news content and extracts potential company tickers.
+
+To use your own NewsAPI key:
+1. Get an API key from [NewsAPI.org](https://newsapi.org/)
+2. Replace the existing key in js/api.js with your actual API key
 
 ## Deployment to Vercel
 
@@ -102,17 +122,19 @@ saveAnalysisResults: async (analysisResults) => {
 
 ## Future Enhancements
 
-- Connect to real news APIs (like NewsAPI)
-- Integrate with financial data APIs for real-time market data
-- Implement more sophisticated sentiment analysis
+- Implement more sophisticated sentiment analysis using machine learning or NLP APIs
 - Add user authentication
 - Add historical analysis comparison
 - Implement email notifications for significant predictions
+- Extend market data history beyond 7 days
+- Add more granular company-specific news filtering
+- Enable user customization of news sources and categories
 
 ## Limitations
 
-- Currently uses mock data; in a production environment, you would connect to real APIs
 - The sentiment analysis is simplified; a more sophisticated NLP approach would improve accuracy
+- Both Alpha Vantage and NewsAPI have rate limits with their free tiers
+- Company ticker extraction is based on a simple keyword match; a more sophisticated approach would improve accuracy
 - Predictions are based on simple correlations; more advanced machine learning models could be implemented
 
 ## License
