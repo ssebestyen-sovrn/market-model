@@ -20,12 +20,19 @@ const Visualization = {
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1,
                     pointRadius: 6,
-                    pointHoverRadius: 8
+                    pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
+                animation: {
+                    duration: 0
+                },
+                hover: {
+                    animationDuration: 0
+                },
+                responsiveAnimationDuration: 0,
                 scales: {
                     x: {
                         title: {
@@ -53,6 +60,9 @@ const Visualization = {
                                 const point = context.raw;
                                 return `Date: ${point.date}, Sentiment: ${point.x.toFixed(2)}, Change: ${point.y.toFixed(2)}`;
                             }
+                        },
+                        animation: {
+                            duration: 0
                         }
                     },
                     legend: {
@@ -75,7 +85,9 @@ const Visualization = {
                         borderColor: 'rgba(75, 192, 192, 1)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         tension: 0.1,
-                        fill: true
+                        fill: true,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: 'rgba(75, 192, 192, 1)'
                     },
                     {
                         label: 'News Sentiment',
@@ -84,13 +96,22 @@ const Visualization = {
                         backgroundColor: 'rgba(255, 99, 132, 0)',
                         borderDash: [5, 5],
                         tension: 0.1,
-                        yAxisID: 'y1'
+                        yAxisID: 'y1',
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)'
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
+                animation: {
+                    duration: 0
+                },
+                hover: {
+                    animationDuration: 0
+                },
+                responsiveAnimationDuration: 0,
                 scales: {
                     x: {
                         title: {
@@ -127,6 +148,11 @@ const Visualization = {
                 plugins: {
                     legend: {
                         position: 'top',
+                    },
+                    tooltip: {
+                        animation: {
+                            duration: 0 // Disable tooltip animations
+                        }
                     }
                 }
             }
