@@ -20,11 +20,11 @@ const Visualization = {
                         data: [],
                         backgroundColor: function(context) {
                             const value = context.dataset.data[context.dataIndex];
-                            return value >= 0 ? 'rgba(46, 184, 92, 0.6)' : 'rgba(220, 53, 69, 0.6)';
+                            return value >= 0 ? 'rgba(78, 188, 135, 0.6)' : 'rgba(239, 71, 111, 0.6)';
                         },
                         borderColor: function(context) {
                             const value = context.dataset.data[context.dataIndex];
-                            return value >= 0 ? 'rgba(46, 184, 92, 1)' : 'rgba(220, 53, 69, 1)';
+                            return value >= 0 ? 'rgba(78, 188, 135, 1)' : 'rgba(239, 71, 111, 1)';
                         },
                         borderWidth: 1,
                         yAxisID: 'y1',
@@ -34,12 +34,12 @@ const Visualization = {
                         label: 'Market Change',
                         data: [],
                         type: 'line',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderColor: '#4cc9f0',
+                        backgroundColor: 'rgba(76, 201, 240, 0.1)',
                         borderWidth: 2,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: '#4cc9f0',
                         fill: false,
                         yAxisID: 'y',
                         order: 1
@@ -48,8 +48,8 @@ const Visualization = {
                         label: 'Correlation Trend',
                         data: [],
                         type: 'line',
-                        borderColor: 'rgba(153, 102, 255, 0.8)',
-                        backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                        borderColor: 'rgba(67, 97, 238, 0.8)',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
                         borderWidth: 2,
                         pointRadius: 0,
                         borderDash: [5, 5],
@@ -131,10 +131,46 @@ const Visualization = {
                         },
                         animation: {
                             duration: 0
-                        }
+                        },
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#2b2d42',
+                        bodyColor: '#495057',
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1,
+                        titleFont: {
+                            family: "'Inter', sans-serif",
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: "'Inter', sans-serif"
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                     },
                     legend: {
                         position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sentiment Impact on Market Performance',
+                        font: {
+                            size: 16,
+                            weight: 'bold',
+                            family: "'Inter', sans-serif"
+                        },
+                        color: '#2b2d42',
+                        padding: {
+                            bottom: 15
+                        }
                     }
                 }
             }
@@ -150,23 +186,23 @@ const Visualization = {
                     {
                         label: 'S&P 500 Value',
                         data: [],
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: '#4cc9f0', // Using our secondary color
+                        backgroundColor: 'rgba(76, 201, 240, 0.2)',
                         tension: 0.1,
                         fill: true,
                         pointHoverRadius: 4,
-                        pointHoverBackgroundColor: 'rgba(75, 192, 192, 1)'
+                        pointHoverBackgroundColor: '#4cc9f0'
                     },
                     {
                         label: 'News Sentiment',
                         data: [],
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0)',
+                        borderColor: '#4361ee', // Using our primary color
+                        backgroundColor: 'rgba(67, 97, 238, 0)',
                         borderDash: [5, 5],
                         tension: 0.1,
                         yAxisID: 'y1',
                         pointHoverRadius: 4,
-                        pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)'
+                        pointHoverBackgroundColor: '#4361ee'
                     }
                 ]
             },
@@ -185,7 +221,13 @@ const Visualization = {
                         display: true,
                         text: 'Market Value vs News Sentiment Over Time',
                         font: {
-                            size: 14
+                            size: 16,
+                            weight: 'bold',
+                            family: "'Inter', sans-serif"
+                        },
+                        color: '#2b2d42',
+                        padding: {
+                            bottom: 15
                         }
                     },
                     subtitle: {
@@ -202,11 +244,34 @@ const Visualization = {
                     },
                     legend: {
                         position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            }
+                        }
                     },
                     tooltip: {
                         animation: {
                             duration: 0 // Disable tooltip animations
-                        }
+                        },
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#2b2d42',
+                        bodyColor: '#495057',
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1,
+                        titleFont: {
+                            family: "'Inter', sans-serif",
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: "'Inter', sans-serif"
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                     }
                 },
                 scales: {
