@@ -44,47 +44,87 @@
             </div>
         </div>
 
-        <div id="resultsSection" class="d-none">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card mb-4">
+        <div id="resultsSection" class="mt-5 d-none">
+            <h2 class="display-6 mb-4">Analysis Results</h2>
+            
+            <!-- Container for data source warnings -->
+            <div id="dataWarningContainer" class="mb-4"></div>
+            
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
                         <div class="card-body">
-                            <h3 class="card-title">Correlation Overview</h3>
-                            <div class="chart-container">
-                                <canvas id="correlationChart"></canvas>
-                            </div>
+                            <h3 class="card-title">Predictions</h3>
+                            <div id="predictionsContainer"></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card mb-4">
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6 equal-height-cards">
+                    <div class="card">
                         <div class="card-body">
                             <h3 class="card-title">Market Trend</h3>
-                            <div class="chart-container">
+                            <p class="text-muted">Shows how market prices and sentiment scores change over time, helping identify patterns between market movements and news sentiment.</p>
+                            <div class="chart-wrapper">
                                 <canvas id="marketTrendChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="card mb-4">
+                <div class="col-md-6 equal-height-cards">
+                    <div class="card">
                         <div class="card-body">
-                            <h3 class="card-title">Recent News Analysis</h3>
-                            <div id="newsContainer" class="row"></div>
+                            <h3 class="card-title">Sentiment Impact Analysis</h3>
+                            <p class="text-muted">Shows how news sentiment (bars) correlates with market changes (line) over time. Purple dotted line indicates the predicted influence path.</p>
+                            <div class="chart-wrapper">
+                                <canvas id="correlationChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-md-12">
-                    <div class="card mb-4">
+                    <div class="card info-card">
                         <div class="card-body">
-                            <h3 class="card-title">Predictions</h3>
-                            <div id="predictionsContainer"></div>
+                            <h5 class="card-title">Analysis Summary</h5>
+                            <div id="analysisSummary">
+                                <div class="row align-items-center">
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
+                                            <span id="totalArticlesCount">0</span>
+                                            <span class="summary-label">News Articles Analyzed</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
+                                            <span id="totalDaysCount">0</span>
+                                            <span class="summary-label">Days Covered</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
+                                            <span id="correlationValue">0</span>
+                                            <span class="summary-label">Sentiment-Market Correlation</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title">News Impact Analysis by Day</h3>
+                            <p class="text-muted">Stories are grouped by date and sorted by impact level. Each day shows the average sentiment and individual story scores. Click on a day to expand all stories from that day.</p>
+                            <div id="newsContainer" class="row"></div>
                         </div>
                     </div>
                 </div>

@@ -19,6 +19,7 @@ body {
 .card {
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
 }
 
 .card:hover {
@@ -28,6 +29,7 @@ body {
 .card-title {
     color: #343a40;
     font-weight: 600;
+    margin-bottom: 1rem;
 }
 
 .btn-primary {
@@ -52,21 +54,57 @@ body {
     flex: 1;
 }
 
+/* Enhanced news card styles for better display with more cards */
+.news-card .card-title {
+    font-size: 0.9rem;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-height: 2.6rem;
+}
+
+.news-card .card-text {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    max-height: 3.4rem;
+}
+
+.news-card .card-footer {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+}
+
+/* Sentiment display styles */
 .sentiment-positive {
     color: #198754;
+    font-weight: 500;
 }
 
 .sentiment-negative {
     color: #dc3545;
+    font-weight: 500;
 }
 
 .sentiment-neutral {
     color: #6c757d;
+    font-weight: 500;
 }
 
+/* Enhanced prediction card styles */
 .prediction-card {
     border-left: 5px solid #0d6efd;
     margin-bottom: 15px;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.prediction-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .prediction-up {
@@ -79,6 +117,21 @@ body {
 
 .prediction-neutral {
     border-left-color: #6c757d;
+}
+
+.prediction-up span.prediction-up {
+    color: #198754;
+    font-weight: 600;
+}
+
+.prediction-down span.prediction-down {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.prediction-neutral span.prediction-neutral {
+    color: #6c757d;
+    font-weight: 600;
 }
 
 /* Loading animation */
@@ -98,13 +151,26 @@ body {
     animation: pulse 1.5s infinite;
 }
 
-/* Chart container styles */
+/* Enhanced chart styles */
 .chart-container {
     position: relative;
     height: 300px;
     width: 100%;
     max-height: 300px;
     overflow: hidden;
+    margin-top: 10px;
+}
+
+/* Correlation title styles */
+.card-title + .text-muted {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+/* Add space between explanation and chart */
+.text-muted + .chart-container {
+    margin-top: 15px;
 }
 
 /* Ensure charts don't grow beyond their containers */
@@ -118,6 +184,11 @@ canvas {
         height: 250px;
         max-height: 250px;
     }
+    
+    /* Adjust cards for tablet */
+    .col-md-3 {
+        width: 50%;
+    }
 }
 
 @media (max-width: 576px) {
@@ -125,4 +196,232 @@ canvas {
         height: 200px;
         max-height: 200px;
     }
+    
+    /* Stack cards on mobile */
+    .col-md-3 {
+        width: 100%;
+    }
+}
+
+/* News accordion styles */
+#newsAccordion {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.accordion-item {
+    border-left: none;
+    border-right: none;
+}
+
+.accordion-item:first-of-type {
+    border-top: none;
+}
+
+.accordion-item:last-of-type {
+    border-bottom: none;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(13, 110, 253, 0.05);
+    color: #0d6efd;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0, 0, 0, 0.125);
+}
+
+.accordion-button .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Table styles for news items */
+.accordion-body .table {
+    margin-bottom: 0;
+}
+
+.accordion-body .table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.accordion-body .table td {
+    vertical-align: middle;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.accordion-body .table tr:hover td {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Impact badge styling */
+.badge.bg-danger {
+    font-weight: 600;
+}
+
+.badge.bg-warning {
+    font-weight: 600;
+    color: #212529;
+}
+
+.badge.bg-info {
+    font-weight: 600;
+}
+
+.badge.bg-light {
+    font-weight: 500;
+}
+
+/* Truncate long headlines */
+.accordion-body .table td:nth-child(2) {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .accordion-button {
+        padding: 0.75rem 0.75rem;
+    }
+    
+    .accordion-button .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .accordion-button .d-flex span:last-child {
+        margin-left: 0 !important;
+        margin-top: 4px;
+    }
+    
+    .accordion-body .table th:nth-child(3), 
+    .accordion-body .table td:nth-child(3) {
+        display: none;
+    }
+    
+    .accordion-body .table th, 
+    .accordion-body .table td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Analysis Summary */
+.info-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.summary-metric {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.summary-metric span {
+    display: block;
+}
+
+.summary-metric span:first-child {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #0d6efd;
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+}
+
+#correlationValue.positive {
+    color: #198754;
+}
+
+#correlationValue.negative {
+    color: #dc3545;
+}
+
+#correlationValue.neutral {
+    color: #6c757d;
+}
+
+/* Equal height chart containers */
+.chart-container {
+    height: 350px;
+    margin-bottom: 1.5rem;
+}
+
+.equal-height-cards .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+}
+
+.equal-height-cards .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-wrapper {
+    flex-grow: 1;
+    position: relative;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* Card spacing in Results Section */
+#resultsSection .row {
+    margin-bottom: 1rem;
+}
+
+#resultsSection .card {
+    height: 100%;
+    margin-bottom: 1.5rem;
+}
+
+/* Remove duplicate margin from cards that already have margin from parent elements */
+#resultsSection .mb-4.card {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Fix for nested rows spacing */
+#resultsSection .row .row {
+    margin-top: 0;
+}
+
+/* Spacing for the Analysis Summary card */
+.info-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+/* Card content formatting */
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Ensure consistent spacing after descriptions */
+.card-text, .text-muted {
+    margin-bottom: 1.25rem;
+}
+
+/* Ensure rows have proper spacing within results section */
+#resultsSection .row.mb-4 {
+    margin-bottom: 1.5rem !important;
+}
+
+/* Add a bit more space at the top of the results section */
+#resultsSection {
+    margin-top: 2.5rem;
 } 
