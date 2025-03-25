@@ -17,7 +17,7 @@ This tool uses news data to analyze correlations with S&P 500 market movements a
 
 ## How It Works
 
-1. When the user clicks the "Analyze Market Data" button, the application fetches news stories and market data.
+1. When the user clicks the "Analyze Market Data" button, the application fetches news stories and market data through server-side API routes.
 2. It analyzes the sentiment of the news and correlates it with market movements.
 3. Based on these correlations, it makes predictions about future price movements.
 4. The results are displayed in charts and cards, making it easy for users to understand the relationships between news and stock prices.
@@ -31,12 +31,15 @@ This tool uses news data to analyze correlations with S&P 500 market movements a
 - NewsAPI.org for real-time business news data
 - Basic sentiment analysis for news articles
 - Vercel for hosting
-- Supabase (prepared for integration)
+- Supabase for data persistence and caching
 
 ## Project Structure
 
 ```
 market-model/
+├── api/
+│   ├── news.js
+│   └── market.js
 ├── css/
 │   └── styles.css
 ├── js/
@@ -46,6 +49,7 @@ market-model/
 │   └── main.js
 ├── data/
 │   └── sample-data.json
+├── .env.example
 ├── index.html
 └── README.md
 ```
@@ -55,26 +59,32 @@ market-model/
 To run this project locally:
 
 1. Clone the repository
-2. Open the project folder
-3. Open `index.html` in your browser
+2. Copy `.env.example` to `.env` and fill in your API keys:
+   ```bash
+   cp .env.example .env
+   ```
+3. Get API keys from:
+   - [NewsAPI.org](https://newsapi.org/)
+   - [Alpha Vantage](https://www.alphavantage.co/support/#api-key)
+   - [Supabase](https://supabase.com)
+4. Set up your Supabase database with the following tables:
+   - `news_articles` (for caching news data)
+   - `market_data` (for caching market data)
+5. Open the project folder
+6. Open `index.html` in your browser
 
 ## API Integration
 
-This project uses real-time data from multiple APIs:
-
-### Alpha Vantage
-Used to fetch real S&P 500 market data for the past 7 days. The application will fall back to sample data if the API rate limit is exceeded or if there's an error with the API request.
-
-To use your own Alpha Vantage API key:
-1. Get a free API key from [Alpha Vantage](https://www.alphavantage.co/support/#api-key)
-2. Replace the 'demo' key in js/api.js with your actual API key
+This project uses real-time data from multiple APIs through server-side routes:
 
 ### NewsAPI.org
-Used to fetch the latest business news from the US with sentiment analysis. The application performs basic sentiment analysis on the news content and extracts potential company tickers.
+Used to fetch the latest business news from the US. The application performs basic sentiment analysis on the news content and extracts potential company tickers.
 
-To use your own NewsAPI key:
-1. Get an API key from [NewsAPI.org](https://newsapi.org/)
-2. Replace the existing key in js/api.js with your actual API key
+### Alpha Vantage
+Used to fetch real S&P 500 market data for the past 7 days.
+
+### Supabase
+Used for data persistence and caching to improve performance and reduce API calls.
 
 ## Deployment to Vercel
 
@@ -89,36 +99,12 @@ This project is configured for easy deployment on Vercel:
    - Build Command: Leave empty
    - Output Directory: Leave empty
    - Install Command: Leave empty
-6. Click "Deploy"
-
-## Supabase Integration
-
-The project is prepared for Supabase integration. To connect to Supabase:
-
-1. Create a Supabase account at [Supabase](https://supabase.com)
-2. Create a new project
-3. Get your API URL and public API key
-4. Create a table called `analysis_results` with appropriate columns
-5. Update the `api.js` file to use the Supabase client:
-
-```javascript
-// Add to the top of api.js
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = 'YOUR_SUPABASE_URL';
-const supabaseKey = 'YOUR_SUPABASE_KEY';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Then update the saveAnalysisResults function
-saveAnalysisResults: async (analysisResults) => {
-    const { data, error } = await supabase
-        .from('analysis_results')
-        .insert([analysisResults]);
-    
-    if (error) throw error;
-    return data;
-}
-```
+6. Add your environment variables in the Vercel project settings:
+   - `NEWS_API_KEY`
+   - `ALPHA_VANTAGE_API_KEY`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+7. Click "Deploy"
 
 ## Future Enhancements
 

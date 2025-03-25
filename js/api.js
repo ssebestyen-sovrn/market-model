@@ -8,78 +8,28 @@ const API = {
     // For demo purposes, we'll use mock data
     
     /**
-     * Fetch news data from NewsAPI.org
-     * @returns {Promise} Promise object with news data
+     * Fetch news data from NewsAPI
+     * @returns {Promise<Array>} Array of news articles
      */
     fetchNews: async () => {
         try {
-            // NewsAPI.org endpoint for top business headlines
-            const apiKey = 'e713140ac78641bd91ad44b7ce192d76';
-            const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=50&apiKey=${apiKey}`;
-            
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Failed to fetch news data');
-            }
-            
+            const response = await fetch('/api/news');
             const data = await response.json();
             
-            // Check if we have valid data
-            if (!data.articles || data.articles.length === 0) {
-                console.warn('NewsAPI returned invalid data or rate limit exceeded:', data);
-                return API.fallbackToSampleNews();
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to fetch news data');
             }
             
-            console.log(`NewsAPI returned ${data.articles.length} articles`);
-            
-            // Process articles to include sentiment and other required properties
-            const processedArticles = data.articles.map((article, index) => {
-                // Analyze sentiment based on title and description
-                const sentimentAnalysis = API.analyzeSentiment(article.title + ' ' + (article.description || ''));
-                
-                // Extract potential company tickers from content
-                const relatedCompanies = API.extractCompanyTickers(article.title + ' ' + (article.description || ''));
-                
-                return {
-                    id: index + 1,
-                    title: article.title,
-                    description: article.description || 'No description available',
-                    source: article.source.name,
-                    url: article.url,
-                    publishedAt: article.publishedAt,
-                    sentiment: sentimentAnalysis.category,
-                    sentimentScore: sentimentAnalysis.score,
-                    relatedCompanies: relatedCompanies
-                };
-            });
-            
-            // Filter out articles more than 7 days old
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
-            const recentArticles = processedArticles.filter(article => {
-                const publishDate = new Date(article.publishedAt);
-                return publishDate >= sevenDaysAgo;
-            });
-            
-            // De-duplicate articles by title to ensure we have distinct stories
-            const uniqueArticleMap = new Map();
-            recentArticles.forEach(article => {
-                if (!uniqueArticleMap.has(article.title)) {
-                    uniqueArticleMap.set(article.title, article);
-                }
-            });
-            
-            const uniqueArticles = Array.from(uniqueArticleMap.values());
-            console.log(`After filtering, we have ${uniqueArticles.length} unique recent articles`);
-            
-            // Return all unique articles that are available, or fall back to sample data if none
-            return uniqueArticles.length > 0 ? uniqueArticles : API.fallbackToSampleNews();
-            
+            return {
+                articles: data.articles || [],
+                isRealData: data.isRealData
+            };
         } catch (error) {
-            console.error('Error fetching news data:', error);
-            // Fall back to sample data if API call fails
-            return API.fallbackToSampleNews();
+            console.error('Error fetching news:', error);
+            return {
+                articles: fallbackToSampleNews(),
+                isRealData: false
+            };
         }
     },
     
@@ -570,227 +520,28 @@ const API = {
     },
     
     /**
-     * Fetch market data for S&P 500
-     * This function uses Yahoo Finance's public API
-     * @returns {Promise} Promise object with market data
-     */
-    fetchYahooFinanceData: async () => {
-        try {
-            console.log('Fetching real-time S&P 500 data from Yahoo Finance...');
-            
-            // Use Yahoo Finance's public API endpoint for S&P 500 (^GSPC)
-            // This doesn't require API keys and works in browsers
-            const url = 'https://query2.finance.yahoo.com/v8/finance/chart/%5EGSPC';
-            
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch data: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            
-            // Check if we have valid data
-            if (!data || !data.chart || !data.chart.result || data.chart.result.length === 0) {
-                console.warn('No valid data returned from Yahoo Finance API');
-                return API.fetchStockData();
-            }
-            
-            const result = data.chart.result[0];
-            const quotes = result.indicators.quote[0];
-            const timestamps = result.timestamp;
-            const meta = result.meta;
-            
-            // Get current value
-            const currentValue = meta.regularMarketPrice;
-            
-            // Process historical data (last 7 trading days)
-            const marketData = [];
-            
-            // We work backwards from the most recent data
-            // Yahoo Finance returns data with most recent last
-            for (let i = timestamps.length - 1; i >= Math.max(0, timestamps.length - 8); i--) {
-                // Skip if we don't have valid data for this timestamp
-                if (!timestamps[i] || quotes.close[i] === null || quotes.close[i] === undefined) {
-                    continue;
-                }
-                
-                const date = new Date(timestamps[i] * 1000);
-                const dateStr = date.toISOString().split('T')[0];
-                
-                const value = quotes.close[i];
-                
-                // Get previous day's value for calculating change
-                const prevValue = i > 0 ? quotes.close[i - 1] : null;
-                
-                // Calculate change and percent change
-                let change = 0;
-                let percentChange = 0;
-                
-                if (prevValue !== null) {
-                    change = value - prevValue;
-                    percentChange = (change / prevValue) * 100;
-                }
-                
-                marketData.push({
-                    date: dateStr,
-                    value: parseFloat(value.toFixed(2)),
-                    change: parseFloat(change.toFixed(2)),
-                    percentChange: parseFloat(percentChange.toFixed(2)),
-                    source: 'Yahoo Finance'
-                });
-            }
-            
-            console.log(`Successfully retrieved ${marketData.length} days of S&P 500 data`);
-            
-            // Return the data sorted by date (oldest first)
-            return marketData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-        } catch (error) {
-            console.error('Error fetching Yahoo Finance data:', error.message);
-            
-            // Fall back to alternative method if Yahoo Finance fails
-            console.log('Trying alternative data source...');
-            return API.fetchStockData();
-        }
-    },
-    
-    /**
-     * Alternative method to create S&P 500 data based on recent values
-     * This is used as a last resort if both data APIs fail
-     * @param {number} currentValue Optional current value to base the simulation on
-     * @returns {Promise} Promise object with market data
-     */
-    fetchStockData: async (currentValue = null) => {
-        try {
-            console.log('Creating alternative source data for S&P 500...');
-            
-            // Create a dataset based on realistic recent S&P 500 values
-            const today = new Date();
-            const marketData = [];
-            
-            // Use provided current value or default to recent approximation
-            // Current value as of July 2024 is around 5500
-            let baseValue = currentValue || 5500;
-            console.log(`Using base value of ${baseValue} for alternative source data`);
-            
-            // Recent typical S&P 500 relative changes (as percentage of previous day)
-            // Starting with most recent day
-            const dailyChanges = [
-                -0.15,  // Small drop 
-                0.25,   // Small gain
-                -0.1,   // Small drop
-                0.3,    // Modest gain
-                -0.2,   // Small drop
-                0.15,   // Small gain
-                -0.05   // Minimal change
-            ];
-            
-            // Calculate absolute values based on the current value and percentage changes
-            const values = [];
-            let currentVal = baseValue;
-            
-            // Work backwards to generate the values
-            for (let i = 0; i < dailyChanges.length; i++) {
-                values.unshift(currentVal);
-                // Calculate previous day's value based on percentage change
-                // reverse calculation: prevValue = currentValue / (1 + percentChange/100)
-                currentVal = currentVal / (1 + (dailyChanges[i] / 100));
-            }
-            
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                
-                // Skip weekends as real market data would
-                const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    continue; // Skip weekend days
-                }
-                
-                const dateStr = date.toISOString().split('T')[0];
-                const valueIndex = 6-i;
-                
-                // Use our calculated values or a good default
-                const value = values[valueIndex] || baseValue;
-                const prevValue = valueIndex > 0 ? values[valueIndex-1] : value * 0.998;
-                const change = value - prevValue;
-                const percentChange = (change / prevValue) * 100;
-                
-                marketData.push({
-                    date: dateStr,
-                    value: parseFloat(value.toFixed(2)),
-                    change: parseFloat(change.toFixed(2)),
-                    percentChange: parseFloat(percentChange.toFixed(2)),
-                    source: 'Alternative Source'  // Indicate this is from our alternative source
-                });
-            }
-            
-            // Make sure we have at least 5 days of data
-            while (marketData.length < 5) {
-                // If we didn't get enough days due to weekend skipping, add some more
-                const lastDate = marketData.length > 0 
-                    ? new Date(marketData[marketData.length - 1].date)
-                    : new Date(today);
-                    
-                lastDate.setDate(lastDate.getDate() + 1);
-                const dayOfWeek = lastDate.getDay();
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    continue; // Skip weekend days
-                }
-                
-                const dateStr = lastDate.toISOString().split('T')[0];
-                const prevValue = marketData.length > 0 ? marketData[marketData.length-1].value : baseValue;
-                // Create a realistic small daily change (+/- 0.1% to 0.3%)
-                const changePercent = (Math.random() * 0.4 - 0.2); // Between -0.2% and +0.2%
-                const change = prevValue * (changePercent / 100);
-                const value = prevValue + change;
-                
-                marketData.push({
-                    date: dateStr,
-                    value: parseFloat(value.toFixed(2)),
-                    change: parseFloat(change.toFixed(2)),
-                    percentChange: parseFloat(changePercent.toFixed(2)),
-                    source: 'Alternative Source'
-                });
-            }
-            
-            console.log(`Created ${marketData.length} days of alternative market data`);
-            
-            // Sort by date ascending for visualization
-            return marketData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-        } catch (error) {
-            console.error('Error creating alternative stock data:', error.message);
-            throw error;
-        }
-    },
-    
-    /**
-     * Fetch real market data for S&P 500 index for the past 7 days
-     * Uses Alpha Vantage API to get actual market data
-     * @returns {Promise} Promise object with market data
+     * Fetch market data from Alpha Vantage
+     * @returns {Promise<Array>} Array of market data points
      */
     fetchMarketData: async () => {
         try {
-            // Try direct Alpha Vantage with API keys first
-            try {
-                const data = await API.fetchYahooFinanceData();
-                if (data && data.length > 0) {
-                    console.log('Successfully retrieved S&P 500 data');
-                    return data;
-                }
-            } catch (error) {
-                console.warn('Alpha Vantage data fetch failed:', error.message);
+            const response = await fetch('/api/market');
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to fetch market data');
             }
             
-            // If direct API fails, fall back to alternative source
-            console.log('All API approaches failed, using alternative source...');
-            return await API.fetchStockData();
-            
+            return {
+                data: data.data || [],
+                isRealData: data.isRealData
+            };
         } catch (error) {
-            console.error('Error fetching market data:', error.message);
-            // Fall back to sample data if everything else fails
-            return API.fallbackToSampleData();
+            console.error('Error fetching market data:', error);
+            return {
+                data: fallbackToSampleData(),
+                isRealData: false
+            };
         }
     },
     
@@ -837,8 +588,7 @@ const API = {
                 value: parseFloat(baseValue.toFixed(2)),
                 change: parseFloat(dailyChange.toFixed(2)),
                 percentChange: parseFloat(((dailyChange / (baseValue - dailyChange)) * 100).toFixed(2)),
-                isSampleData: true, // Flag to indicate this is sample data
-                source: 'Sample Data'  // Indicate the data source
+                isSampleData: true // Flag to indicate this is sample data
             });
         }
         
@@ -858,8 +608,7 @@ const API = {
                 value: parseFloat(baseValue.toFixed(2)),
                 change: parseFloat(dailyChange.toFixed(2)),
                 percentChange: parseFloat(((dailyChange / (baseValue - dailyChange)) * 100).toFixed(2)),
-                isSampleData: true,
-                source: 'Sample Data'  // Indicate the data source
+                isSampleData: true
             });
         }
         
@@ -868,7 +617,7 @@ const API = {
     },
     
     /**
-     * In a real application, this would save analysis results to Supabase
+     * Save analysis results (simulated)
      * @param {Object} analysisResults The results to save
      * @returns {Promise} Promise object representing the save operation
      */
@@ -876,14 +625,8 @@ const API = {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        console.log("Analysis results would be saved to Supabase:", analysisResults);
+        console.log("Analysis results:", analysisResults);
         
-        // In a real application, this would use the Supabase client
-        // Example:
-        // const { data, error } = await supabase
-        //   .from('analysis_results')
-        //   .insert([analysisResults]);
-        
-        return { success: true, id: "mock-id-" + Date.now() };
+        return { success: true, id: "analysis-" + Date.now() };
     }
 }; 
