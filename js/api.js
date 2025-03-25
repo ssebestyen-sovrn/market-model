@@ -14,22 +14,19 @@ const API = {
     fetchNews: async () => {
         try {
             const response = await fetch('/api/news');
+            if (!response.ok) {
+                throw new Error('Failed to fetch news data');
+            }
             const data = await response.json();
             
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to fetch news data');
+            if (!data.articles || !Array.isArray(data.articles)) {
+                throw new Error('Invalid news data format');
             }
             
-            return {
-                articles: data.articles || [],
-                isRealData: data.isRealData
-            };
+            return data;
         } catch (error) {
             console.error('Error fetching news:', error);
-            return {
-                articles: API.fallbackToSampleNews(),
-                isRealData: false
-            };
+            return API.fallbackToSampleNews();
         }
     },
     
@@ -231,22 +228,19 @@ const API = {
     fetchMarketData: async () => {
         try {
             const response = await fetch('/api/market');
+            if (!response.ok) {
+                throw new Error('Failed to fetch market data');
+            }
             const data = await response.json();
             
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to fetch market data');
+            if (!data.data || !Array.isArray(data.data)) {
+                throw new Error('Invalid market data format');
             }
             
-            return {
-                data: data.data || [],
-                isRealData: data.isRealData
-            };
+            return data;
         } catch (error) {
             console.error('Error fetching market data:', error);
-            return {
-                data: API.fallbackToSampleData(),
-                isRealData: false
-            };
+            return API.fallbackToSampleData();
         }
     },
     
