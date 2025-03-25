@@ -1,6 +1,10 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-module.exports = async function(req, res) {
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }

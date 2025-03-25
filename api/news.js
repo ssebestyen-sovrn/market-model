@@ -1,6 +1,10 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-module.exports = async function(req, res) {
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -59,9 +63,9 @@ module.exports = async function(req, res) {
   }
 }
 
-// Helper functions moved from frontend
+// Helper functions
 function analyzeSentiment(text) {
-  if (!text) return { score: 0, category: 'neutral' };
+  if (!text) return 'neutral';
   
   const lowerText = text.toLowerCase();
   
