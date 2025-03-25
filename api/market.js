@@ -40,13 +40,9 @@ module.exports = async function handler(req, res) {
 
       return {
         date,
-        open: parseFloat(dayData['1. open']),
-        high: parseFloat(dayData['2. high']),
-        low: parseFloat(dayData['3. low']),
-        close: parseFloat(dayData['4. close']),
-        volume: parseInt(dayData['5. volume']),
+        value: parseFloat(dayData['4. close']),
         change: prevData ? parseFloat(dayData['4. close']) - parseFloat(prevData['4. close']) : 0,
-        changePercent: prevData ? 
+        percentChange: prevData ? 
           ((parseFloat(dayData['4. close']) - parseFloat(prevData['4. close'])) / parseFloat(prevData['4. close'])) * 100 : 0
       };
     });

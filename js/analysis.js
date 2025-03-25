@@ -11,6 +11,14 @@ const Analysis = {
      * @returns {Object} Analysis results
      */
     analyzeData: (newsData, marketData) => {
+        // Validate input data
+        if (!newsData || !Array.isArray(newsData)) {
+            throw new Error('Invalid news data: newsData must be an array');
+        }
+        if (!marketData || !Array.isArray(marketData)) {
+            throw new Error('Invalid market data: marketData must be an array');
+        }
+        
         // Group news by date
         const newsByDate = newsData.reduce((acc, news) => {
             const date = news.publishedAt.split('T')[0]; // Extract date part
@@ -64,6 +72,11 @@ const Analysis = {
         
         // Match market data with sentiment data
         const correlationData = marketData.map(market => {
+            if (!market || !market.date) {
+                console.warn('Invalid market data point:', market);
+                return null;
+            }
+            
             const date = market.date;
             const sentiment = sentimentByDate[date] || { 
                 positive: 0, negative: 0, neutral: 0, 
@@ -73,8 +86,8 @@ const Analysis = {
             
             return {
                 date,
-                marketValue: market.value,
-                marketChange: market.change,
+                marketValue: market.value || 0,
+                marketChange: market.change || 0,
                 sentimentScore: sentiment.score,
                 sentimentScoreOld: sentiment.scoreOld,
                 positive: sentiment.positive,
@@ -85,7 +98,7 @@ const Analysis = {
                 negativeCount: sentiment.negativeCount,
                 neutralCount: sentiment.neutralCount
             };
-        });
+        }).filter(Boolean); // Remove any null entries
         
         // Calculate correlation between sentiment and market changes
         const correlations = {

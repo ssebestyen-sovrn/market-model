@@ -237,10 +237,16 @@ const API = {
                 throw new Error('Invalid market data format');
             }
             
-            return data;
+            return {
+                data: data.data,
+                isRealData: data.isRealData
+            };
         } catch (error) {
             console.error('Error fetching market data:', error);
-            return API.fallbackToSampleData();
+            return {
+                data: API.fallbackToSampleData(),
+                isRealData: false
+            };
         }
     },
     
