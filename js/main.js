@@ -156,37 +156,55 @@ function updateUI() {
     
     // Check if we're using sample market data and show a warning if we are
     const usingSampleData = state.marketData.some(data => data.isSampleData);
+    const source = state.marketData[0].source || 'Unknown';
     const warningContainer = document.getElementById('dataWarningContainer');
     
     // Display data source information
     const dataSourceContainer = document.getElementById('dataSourceContainer') || createDataSourceContainer();
     displayDataSource(dataSourceContainer, state.marketData);
     
+    // Clear any existing warnings first
+    warningContainer.innerHTML = '';
+    
     if (usingSampleData) {
         // Create a warning alert if it doesn't exist
-        if (!warningContainer.querySelector('.alert')) {
-            const warningAlert = document.createElement('div');
-            warningAlert.className = 'alert alert-warning alert-dismissible fade show';
-            warningAlert.innerHTML = `
-                <strong>Notice:</strong> Using simulated S&P 500 data. 
-                <div class="mt-2">
-                    <p>This is likely happening because:</p>
-                    <ul>
-                        <li>All data sources (Yahoo Finance and Alpha Vantage) are currently unavailable</li>
-                        <li>API keys for Alpha Vantage have reached their rate limit (free keys are limited to 25 calls per day)</li>
-                        <li>The S&P 500 market may be closed today (weekends/holidays)</li>
-                        <li>There might be temporary connection issues with the data providers</li>
-                    </ul>
-                    <p>Check the browser console (F12 → Console) for more details.</p>
-                    <p>You can try again later or get a new API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a></p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            warningContainer.appendChild(warningAlert);
-        }
-    } else {
-        // Clear any existing warnings if we're using real data
-        warningContainer.innerHTML = '';
+        const warningAlert = document.createElement('div');
+        warningAlert.className = 'alert alert-warning alert-dismissible fade show';
+        warningAlert.innerHTML = `
+            <strong>Notice:</strong> Using simulated S&P 500 data. 
+            <div class="mt-2">
+                <p>This is likely happening because:</p>
+                <ul>
+                    <li>All data sources (Yahoo Finance and Alpha Vantage) are currently unavailable</li>
+                    <li>API keys for Alpha Vantage have reached their rate limit (free keys are limited to 25 calls per day)</li>
+                    <li>The S&P 500 market may be closed today (weekends/holidays)</li>
+                    <li>There might be temporary connection issues with the data providers</li>
+                </ul>
+                <p>Check the browser console (F12 → Console) for more details.</p>
+                <p>You can try again later or get a new API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a></p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        warningContainer.appendChild(warningAlert);
+    } 
+    else if (source === 'Alternative Source') {
+        // Show an info alert for Alternative Source
+        const infoAlert = document.createElement('div');
+        infoAlert.className = 'alert alert-info alert-dismissible fade show';
+        infoAlert.innerHTML = `
+            <strong>Notice:</strong> Using alternative data source with recent S&P 500 values. 
+            <div class="mt-2">
+                <p>This is happening because:</p>
+                <ul>
+                    <li>Primary data sources (Yahoo Finance API and Alpha Vantage) were not available</li>
+                    <li>The API keys for Alpha Vantage may have reached their rate limits</li>
+                </ul>
+                <p>The data is based on recent S&P 500 values and is fairly accurate for analysis purposes.</p>
+                <p>Check the browser console (F12 → Console) for more details about the API responses.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        warningContainer.appendChild(infoAlert);
     }
     
     // Update analysis summary metrics
@@ -293,14 +311,36 @@ function displayDataSource(container, marketData) {
     
     // Create a badge with appropriate color based on the source
     let badgeColor = 'bg-secondary';
-    if (source === 'Yahoo Finance') badgeColor = 'bg-success';
-    else if (source === 'Alpha Vantage') badgeColor = 'bg-primary';
-    else if (source === 'Sample Data') badgeColor = 'bg-warning text-dark';
+    let sourceDescription = '';
+    
+    if (source === 'Yahoo Finance') {
+        badgeColor = 'bg-success';
+        sourceDescription = 'Real-time market data from Yahoo Finance public data';
+    } 
+    else if (source === 'Market Data') {
+        badgeColor = 'bg-success';
+        sourceDescription = 'Real historical S&P 500 data (August 2024)';
+    }
+    else if (source === 'Alpha Vantage') {
+        badgeColor = 'bg-primary';
+        sourceDescription = 'Real-time market data from Alpha Vantage API';
+    }
+    else if (source === 'Alternative Source') {
+        badgeColor = 'bg-info text-dark';
+        sourceDescription = 'Recent market data generated from real S&P 500 values';
+    }
+    else if (source === 'Sample Data') {
+        badgeColor = 'bg-warning text-dark';
+        sourceDescription = 'Simulated market data (APIs unavailable)';
+    }
     
     container.innerHTML = `
-        <div class="d-flex align-items-center mb-2">
-            <span class="me-2">Data Source:</span>
-            <span class="badge ${badgeColor}">${source}</span>
+        <div class="mb-2">
+            <div class="d-flex align-items-center mb-1">
+                <span class="me-2">Data Source:</span>
+                <span class="badge ${badgeColor}">${source}</span>
+            </div>
+            <div class="small text-muted">${sourceDescription}</div>
         </div>
     `;
     

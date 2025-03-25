@@ -447,7 +447,7 @@ const Visualization = {
             }
         };
         
-        // If we're using sample data, add a visual indicator
+        // Update chart style based on data source
         if (usingSampleData) {
             // Add a note to the chart title
             window.marketTrendChart.options.plugins.title = {
@@ -467,7 +467,45 @@ const Visualization = {
             window.marketTrendChart.data.datasets[0].borderDash = [5, 5]; // Dotted line
             window.marketTrendChart.data.datasets[0].borderColor = 'rgba(75, 192, 192, 0.8)'; // More transparent
             window.marketTrendChart.data.datasets[0].pointStyle = 'rectRot'; // Different point style
-        } else {
+        } 
+        else if (dataSource === 'Alternative Source') {
+            // Styling for alternative source (reliable but not direct API)
+            window.marketTrendChart.options.plugins.title = {
+                display: true,
+                text: `S&P 500 Market Trend (${dataSource})`,
+                font: {
+                    size: 14,
+                    style: 'italic'
+                },
+                color: '#0275d8' // Blue color for alternative data
+            };
+            
+            window.marketTrendChart.options.plugins.subtitle.display = false;
+            
+            // Semi-dotted line to indicate it's based on real data but with some computation
+            window.marketTrendChart.data.datasets[0].borderDash = [3, 3]; 
+            window.marketTrendChart.data.datasets[0].borderColor = 'rgba(2, 117, 216, 0.9)';
+            window.marketTrendChart.data.datasets[0].pointStyle = 'triangle'; 
+        }
+        else if (dataSource === 'Market Data') {
+            // Styling for real market data (solid line, normal colors)
+            window.marketTrendChart.options.plugins.title = {
+                display: true,
+                text: `S&P 500 Market Trend (${dataSource})`,
+                font: {
+                    size: 14
+                },
+                color: '#28a745' // Green for real data
+            };
+            
+            window.marketTrendChart.options.plugins.subtitle.display = false;
+            
+            // Normal styling for real data
+            window.marketTrendChart.data.datasets[0].borderDash = []; // Solid line
+            window.marketTrendChart.data.datasets[0].borderColor = 'rgba(40, 167, 69, 1)'; // Green
+            window.marketTrendChart.data.datasets[0].pointStyle = 'circle'; // Normal points
+        }
+        else {
             // Reset to normal style for real data but keep title
             window.marketTrendChart.options.plugins.title = {
                 display: true,
