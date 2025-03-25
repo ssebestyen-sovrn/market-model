@@ -576,9 +576,20 @@ const API = {
      */
     fetchMarketData: async () => {
         try {
+            // First try Yahoo Finance API
+            try {
+                const yahooData = await API.fetchYahooFinanceData();
+                if (yahooData && yahooData.length > 0) {
+                    console.log('Successfully retrieved S&P 500 data from Yahoo Finance');
+                    return yahooData;
+                }
+            } catch (yahooError) {
+                console.warn('Yahoo Finance data fetch failed, falling back to Alpha Vantage:', yahooError.message);
+            }
+            
             // Alpha Vantage API endpoint for S&P 500 (^GSPC)
             // You can get a free API key from https://www.alphavantage.co/support/#api-key
-            const primaryApiKey = 'NVFJQVHXIW3NWLVQ'; // User's provided Alpha Vantage API key
+            const primaryApiKey = 'JPUU1OH0N3NIV4E4'; // User's provided Alpha Vantage API key
             const backupApiKey = 'TNNX8JOKR0XAAH82'; // Alternative key to try if the first one fails
             const symbol = '%5EGSPC'; // S&P 500 index (URL encoded ^GSPC)
             
@@ -661,7 +672,8 @@ const API = {
                     date: date,
                     value: value,
                     change: parseFloat(change.toFixed(2)),
-                    percentChange: parseFloat(percentChange.toFixed(2))
+                    percentChange: parseFloat(percentChange.toFixed(2)),
+                    source: 'Alpha Vantage'  // Indicate the data source
                 });
                 
                 previousDayValue = value;
@@ -676,6 +688,108 @@ const API = {
             console.error('Error fetching market data:', error.message);
             // Fall back to sample data if API call fails
             return API.fallbackToSampleData();
+        }
+    },
+    
+    /**
+     * Fetch market data from Yahoo Finance for S&P 500
+     * This is an alternative data source when Alpha Vantage is unavailable
+     * @returns {Promise} Promise object with market data
+     */
+    fetchYahooFinanceData: async () => {
+        try {
+            // Yahoo Finance API endpoint for S&P 500 (^GSPC)
+            // We'll use a proxy URL to avoid CORS issues with direct Yahoo Finance API calls
+            console.log('Fetching S&P 500 data from Yahoo Finance...');
+            
+            // Calculate date range for the past 10 days (to ensure we get at least 7 trading days)
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 10);
+            
+            // Format dates for the Yahoo Finance API (Unix timestamp in seconds)
+            const period1 = Math.floor(startDate.getTime() / 1000);
+            const period2 = Math.floor(endDate.getTime() / 1000);
+            
+            // Use a CORS proxy to access Yahoo Finance data
+            // In a production environment, you should set up your own proxy server
+            const corsProxy = 'https://corsproxy.io/?';
+            const symbol = '%5EGSPC'; // S&P 500 index (URL encoded ^GSPC)
+            const interval = '1d'; // Daily data
+            
+            const yahooFinanceUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${interval}`;
+            const proxyUrl = `${corsProxy}${encodeURIComponent(yahooFinanceUrl)}`;
+            
+            console.log('Yahoo Finance request URL:', yahooFinanceUrl);
+            
+            const response = await fetch(proxyUrl);
+            console.log('Yahoo Finance response status:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`);
+            }
+            
+            const responseData = await response.json();
+            
+            // Check if we have valid data
+            if (!responseData.chart || 
+                !responseData.chart.result || 
+                !responseData.chart.result[0] ||
+                !responseData.chart.result[0].timestamp ||
+                !responseData.chart.result[0].indicators ||
+                !responseData.chart.result[0].indicators.quote ||
+                !responseData.chart.result[0].indicators.quote[0] ||
+                !responseData.chart.result[0].indicators.quote[0].close) {
+                throw new Error('Invalid data structure returned from Yahoo Finance API');
+            }
+            
+            // Extract the relevant data
+            const result = responseData.chart.result[0];
+            const timestamps = result.timestamp;
+            const closePrices = result.indicators.quote[0].close;
+            
+            if (timestamps.length === 0 || closePrices.length === 0) {
+                throw new Error('No data points returned from Yahoo Finance API');
+            }
+            
+            console.log(`Retrieved ${timestamps.length} data points from Yahoo Finance`);
+            
+            // Process data into our format
+            const marketData = [];
+            
+            // Get only the last 7 trading days
+            const dataPoints = Math.min(7, timestamps.length);
+            let previousDayValue = closePrices[timestamps.length - dataPoints - 1] || closePrices[0];
+            
+            for (let i = timestamps.length - dataPoints; i < timestamps.length; i++) {
+                // Skip any null values that might be in the data
+                if (closePrices[i] === null) continue;
+                
+                // Convert timestamp (seconds) to date string
+                const date = new Date(timestamps[i] * 1000).toISOString().split('T')[0];
+                const value = parseFloat(closePrices[i].toFixed(2));
+                const change = value - previousDayValue;
+                const percentChange = previousDayValue ? (change / previousDayValue) * 100 : 0;
+                
+                marketData.push({
+                    date: date,
+                    value: value,
+                    change: parseFloat(change.toFixed(2)),
+                    percentChange: parseFloat(percentChange.toFixed(2)),
+                    source: 'Yahoo Finance'  // Indicate the data source
+                });
+                
+                previousDayValue = value;
+            }
+            
+            console.log(`Processed ${marketData.length} days of market data from Yahoo Finance`);
+            
+            // Sort by date ascending for visualization
+            return marketData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+        } catch (error) {
+            console.error('Error fetching Yahoo Finance data:', error.message);
+            throw error; // Let the calling function handle this error
         }
     },
     
@@ -722,7 +836,8 @@ const API = {
                 value: parseFloat(baseValue.toFixed(2)),
                 change: parseFloat(dailyChange.toFixed(2)),
                 percentChange: parseFloat(((dailyChange / (baseValue - dailyChange)) * 100).toFixed(2)),
-                isSampleData: true // Flag to indicate this is sample data
+                isSampleData: true, // Flag to indicate this is sample data
+                source: 'Sample Data'  // Indicate the data source
             });
         }
         
@@ -742,7 +857,8 @@ const API = {
                 value: parseFloat(baseValue.toFixed(2)),
                 change: parseFloat(dailyChange.toFixed(2)),
                 percentChange: parseFloat(((dailyChange / (baseValue - dailyChange)) * 100).toFixed(2)),
-                isSampleData: true
+                isSampleData: true,
+                source: 'Sample Data'  // Indicate the data source
             });
         }
         

@@ -110,6 +110,13 @@ function logNewsDataInfo(newsData) {
 function logAnalysisResults(analysisResults) {
     console.log('%cANALYSIS RESULTS - DEBUG INFO', 'font-weight: bold; font-size: 14px; color: green;');
     
+    // Log data source
+    if (state.marketData && state.marketData.length > 0) {
+        const source = state.marketData[0].source || 'Unknown';
+        console.log('%cData Source:', 'font-weight: bold;');
+        console.log(`  ${source}`);
+    }
+    
     // Log correlation data
     console.log('%cCorrelation Data (by date):', 'font-weight: bold;');
     const sortedData = [...analysisResults.correlationData].sort((a, b) => 
@@ -151,6 +158,10 @@ function updateUI() {
     const usingSampleData = state.marketData.some(data => data.isSampleData);
     const warningContainer = document.getElementById('dataWarningContainer');
     
+    // Display data source information
+    const dataSourceContainer = document.getElementById('dataSourceContainer') || createDataSourceContainer();
+    displayDataSource(dataSourceContainer, state.marketData);
+    
     if (usingSampleData) {
         // Create a warning alert if it doesn't exist
         if (!warningContainer.querySelector('.alert')) {
@@ -161,11 +172,12 @@ function updateUI() {
                 <div class="mt-2">
                     <p>This is likely happening because:</p>
                     <ul>
-                        <li>The API key has reached its rate limit (free Alpha Vantage keys are limited to 25 calls per day)</li>
+                        <li>All data sources (Yahoo Finance and Alpha Vantage) are currently unavailable</li>
+                        <li>API keys for Alpha Vantage have reached their rate limit (free keys are limited to 25 calls per day)</li>
                         <li>The S&P 500 market may be closed today (weekends/holidays)</li>
-                        <li>There might be a temporary connection issue with Alpha Vantage</li>
+                        <li>There might be temporary connection issues with the data providers</li>
                     </ul>
-                    <p>Check the browser console (F12 → Console) for more details. The key <code>NVFJQVHXIW3NWLVQ</code> is being used.</p>
+                    <p>Check the browser console (F12 → Console) for more details.</p>
                     <p>You can try again later or get a new API key from <a href="https://www.alphavantage.co/support/#api-key" target="_blank">Alpha Vantage</a></p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -246,4 +258,58 @@ function setLoadingState(isLoading) {
         analyzeBtn.disabled = false;
         analyzeBtn.innerHTML = 'Analyze Market Data';
     }
+}
+
+/**
+ * Creates a container to display the data source information
+ * @returns {HTMLElement} The created container
+ */
+function createDataSourceContainer() {
+    // Find the results section header
+    const resultsSection = document.getElementById('resultsSection');
+    const header = resultsSection.querySelector('h2');
+    
+    // Create a container for the data source information
+    const container = document.createElement('div');
+    container.id = 'dataSourceContainer';
+    container.className = 'mb-3';
+    
+    // Insert it after the header
+    header.parentNode.insertBefore(container, header.nextSibling);
+    
+    return container;
+}
+
+/**
+ * Display the data source information
+ * @param {HTMLElement} container The container to display the information in
+ * @param {Array} marketData The market data
+ */
+function displayDataSource(container, marketData) {
+    if (!marketData || marketData.length === 0) return;
+    
+    // Get the data source from the first item (they should all be the same source)
+    const source = marketData[0].source || 'Unknown';
+    
+    // Create a badge with appropriate color based on the source
+    let badgeColor = 'bg-secondary';
+    if (source === 'Yahoo Finance') badgeColor = 'bg-success';
+    else if (source === 'Alpha Vantage') badgeColor = 'bg-primary';
+    else if (source === 'Sample Data') badgeColor = 'bg-warning text-dark';
+    
+    container.innerHTML = `
+        <div class="d-flex align-items-center mb-2">
+            <span class="me-2">Data Source:</span>
+            <span class="badge ${badgeColor}">${source}</span>
+        </div>
+    `;
+    
+    // Display the date range of the data
+    const startDate = marketData[0].date;
+    const endDate = marketData[marketData.length - 1].date;
+    
+    const dateRangeInfo = document.createElement('div');
+    dateRangeInfo.className = 'small text-muted';
+    dateRangeInfo.textContent = `Date range: ${startDate} to ${endDate}`;
+    container.appendChild(dateRangeInfo);
 } 

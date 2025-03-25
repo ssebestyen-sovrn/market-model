@@ -320,8 +320,9 @@ const Visualization = {
      * @param {Array} marketData Market data
      */
     updateCharts: (results, newsData, marketData) => {
-        // Check if we're using sample data
+        // Check if we're using sample data and get data source
         const usingSampleData = marketData.some(data => data.isSampleData);
+        const dataSource = marketData.length > 0 ? marketData[0].source || 'Unknown' : 'Unknown';
         
         // Sort data by date for the correlation chart
         const sortedCorrelationData = [...results.correlationData]
@@ -451,7 +452,7 @@ const Visualization = {
             // Add a note to the chart title
             window.marketTrendChart.options.plugins.title = {
                 display: true,
-                text: 'S&P 500 Market Trend (Simulated Data)',
+                text: `S&P 500 Market Trend (${dataSource})`,
                 font: {
                     size: 14,
                     style: 'italic'
@@ -470,7 +471,7 @@ const Visualization = {
             // Reset to normal style for real data but keep title
             window.marketTrendChart.options.plugins.title = {
                 display: true,
-                text: 'Market Value vs News Sentiment Over Time',
+                text: `Market Value vs News Sentiment Over Time (${dataSource})`,
                 font: {
                     size: 14
                 }
