@@ -172,12 +172,6 @@ function updateUI() {
     // Show results section
     document.getElementById('resultsSection').classList.remove('d-none');
     
-    // Hide the introduction card
-    const introCard = document.querySelector('.container > .row:first-child');
-    if (introCard) {
-        introCard.classList.add('d-none');
-    }
-    
     // Update data source badge
     const usingSampleMarketData = state.marketData.some(data => data.isSampleData);
     const usingSampleNewsData = state.newsData.some(data => data.isSampleData);

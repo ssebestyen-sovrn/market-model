@@ -31,7 +31,7 @@
             <div class="col-md-12">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h2 class="card-title">4 News & Market Correlation Analysis</h2>
+                        <h2 class="card-title">News & Market Correlation Analysis</h2>
                         <p class="card-text">
                             This tool analyzes news content and SP500 market data to identify correlations and potential predictive patterns.
                         </p>
@@ -69,9 +69,14 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="analyzeBtn" class="btn btn-primary">
-                            <span>Analyze Market Data</span>
-                        </button>
+                        <div class="d-flex justify-content-between gap-2">
+                            <button id="analyzeBtn" class="btn btn-primary">
+                                <span>Analyze Market Data</span>
+                            </button>
+                            <button id="howItWorksBtn" class="btn btn-primary">
+                                <span>How It Works</span>
+                            </button>
+                        </div>
                         <div id="loadingIndicator" class="d-none mt-3">
                             <div class="spinner-border custom-color" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -84,11 +89,9 @@
         </div>
 
         <div id="resultsSection" class="d-none">
-            <h2 class="display-6">Analysis Results</h2>
-            
             <div class="row mb-4">
                 <div class="col-md-12">
-                    <div class="card info-card">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Analysis Summary 
                                 <span id="dataSourceBadge" class="badge rounded-pill ms-2" style="font-size: 0.7em; font-weight: normal;"></span>
@@ -192,10 +195,61 @@
         </div>
     </div>
 
+    <div id="howItWorksSection" class="container mt-4 mb-5 d-none">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="card-title mb-0">How It Works</h3>
+                            <button class="btn-close" id="closeHowItWorks" aria-label="Close"></button>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Modeling Process</h5>
+                                <p>The analysis combines two key data sources:</p>
+                                <ul>
+                                    <li><strong>Market Data:</strong> S&P 500 daily values and changes</li>
+                                    <li><strong>News Analysis:</strong> Sentiment analysis of financial news articles</li>
+                                </ul>
+                                <p>The model:</p>
+                                <ul>
+                                    <li>Analyzes sentiment patterns in news articles</li>
+                                    <li>Identifies correlations between sentiment and market movements</li>
+                                    <li>Uses moving averages to smooth out daily fluctuations</li>
+                                    <li>Considers both immediate and longer-term trends</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Important Disclaimer</h5>
+                                <div class="alert alert-warning">
+                                    <p class="mb-0"><strong>This tool is for educational and research purposes only.</strong></p>
+                                    <p class="mb-0">The predictions and analysis provided should not be considered as financial advice or used as the sole basis for making investment decisions. Always conduct your own research and consider consulting with financial professionals before making investment choices.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/analysis.js"></script>
     <script src="js/visualization.js"></script>
     <script src="js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add event listeners for How It Works button
+        document.getElementById('howItWorksBtn').addEventListener('click', function() {
+            document.getElementById('howItWorksSection').classList.remove('d-none');
+            // Scroll to the section
+            document.getElementById('howItWorksSection').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        document.getElementById('closeHowItWorks').addEventListener('click', function() {
+            document.getElementById('howItWorksSection').classList.add('d-none');
+        });
+    </script>
 </body>
 </html>
