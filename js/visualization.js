@@ -321,7 +321,8 @@ const Visualization = {
      */
     updateCharts: (results, newsData, marketData) => {
         // Check if we're using sample data
-        const usingSampleData = marketData.some(data => data.isSampleData);
+        const usingSampleMarketData = marketData.some(data => data.isSampleData);
+        const usingSampleNewsData = newsData.some(data => data.isSampleData);
         
         // Sort data by date for the correlation chart
         const sortedCorrelationData = [...results.correlationData]
@@ -446,12 +447,21 @@ const Visualization = {
             }
         };
         
-        // If we're using sample data, add a visual indicator
-        if (usingSampleData) {
+        // If we're using sample data, add visual indicators
+        if (usingSampleMarketData || usingSampleNewsData) {
             // Add a note to the chart title
+            let titleText = 'Market Trend';
+            if (usingSampleMarketData && usingSampleNewsData) {
+                titleText += ' (Simulated Data)';
+            } else if (usingSampleMarketData) {
+                titleText += ' (Simulated Market Data)';
+            } else {
+                titleText += ' (Simulated News Data)';
+            }
+            
             window.marketTrendChart.options.plugins.title = {
                 display: true,
-                text: 'S&P 500 Market Trend (Simulated Data)',
+                text: titleText,
                 font: {
                     size: 14,
                     style: 'italic'
@@ -463,11 +473,20 @@ const Visualization = {
             window.marketTrendChart.options.plugins.subtitle.display = false;
             
             // Change the market value line style to show it's simulated
-            window.marketTrendChart.data.datasets[0].borderDash = [5, 5]; // Dotted line
-            window.marketTrendChart.data.datasets[0].borderColor = 'rgba(75, 192, 192, 0.8)'; // More transparent
-            window.marketTrendChart.data.datasets[0].pointStyle = 'rectRot'; // Different point style
+            if (usingSampleMarketData) {
+                window.marketTrendChart.data.datasets[0].borderDash = [5, 5]; // Dotted line
+                window.marketTrendChart.data.datasets[0].borderColor = 'rgba(75, 192, 192, 0.8)'; // More transparent
+                window.marketTrendChart.data.datasets[0].pointStyle = 'rectRot'; // Different point style
+            }
+            
+            // Change the sentiment line style to show it's simulated
+            if (usingSampleNewsData) {
+                window.marketTrendChart.data.datasets[1].borderDash = [5, 5]; // Dotted line
+                window.marketTrendChart.data.datasets[1].borderColor = 'rgba(67, 97, 238, 0.6)'; // More transparent
+                window.marketTrendChart.data.datasets[1].pointStyle = 'rectRot'; // Different point style
+            }
         } else {
-            // Reset to normal style for real data but keep title
+            // Reset to normal style for real data
             window.marketTrendChart.options.plugins.title = {
                 display: true,
                 text: 'Market Value vs News Sentiment Over Time',
@@ -479,9 +498,15 @@ const Visualization = {
             // Keep subtitle hidden
             window.marketTrendChart.options.plugins.subtitle.display = false;
             
+            // Reset market line style
             window.marketTrendChart.data.datasets[0].borderDash = []; // Solid line
             window.marketTrendChart.data.datasets[0].borderColor = 'rgba(75, 192, 192, 1)'; // Normal opacity
             window.marketTrendChart.data.datasets[0].pointStyle = 'circle'; // Normal points
+            
+            // Reset sentiment line style
+            window.marketTrendChart.data.datasets[1].borderDash = []; // Solid line
+            window.marketTrendChart.data.datasets[1].borderColor = 'rgba(67, 97, 238, 1)'; // Normal opacity
+            window.marketTrendChart.data.datasets[1].pointStyle = 'circle'; // Normal points
         }
         
         window.marketTrendChart.update();
@@ -630,27 +655,29 @@ const Visualization = {
             const formattedSentiment = sentimentValue >= 0 ? `+${sentimentValue}` : sentimentValue;
             
             const predictionCard = document.createElement('div');
-            predictionCard.className = `card prediction-card ${directionClass} mb-4`;
+            predictionCard.className = `col-md-6`;
             predictionCard.innerHTML = `
-                <div class="card-body">
-                    <h5 class="card-title">
-                        ${prediction.timeframe} Prediction: 
-                        <span class="prediction-${prediction.direction}">
-                            ${directionIcon} ${prediction.direction.toUpperCase()}
-                        </span>
-                    </h5>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <strong>Confidence:</strong> ${prediction.confidence.toFixed(0)}%
-                        </div>
-                        <div>
-                            <strong>Sentiment:</strong> 
-                            <span class="sentiment-${prediction.sentiment > 0 ? 'positive' : (prediction.sentiment < 0 ? 'negative' : 'neutral')}">
-                                ${formattedSentiment}
+                <div class="card prediction-card ${directionClass} h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            ${prediction.timeframe} Prediction: 
+                            <span class="prediction-${prediction.direction}">
+                                ${directionIcon} ${prediction.direction.toUpperCase()}
                             </span>
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>Confidence:</strong> ${prediction.confidence.toFixed(0)}%
+                            </div>
+                            <div>
+                                <strong>Sentiment:</strong> 
+                                <span class="sentiment-${prediction.sentiment > 0 ? 'positive' : (prediction.sentiment < 0 ? 'negative' : 'neutral')}">
+                                    ${formattedSentiment}
+                                </span>
+                            </div>
                         </div>
+                        <p class="card-text" style="white-space: pre-line">${prediction.explanation}</p>
                     </div>
-                    <p class="card-text">${prediction.explanation}</p>
                 </div>
             `;
             

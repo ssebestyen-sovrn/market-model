@@ -35,14 +35,48 @@
                         <p class="card-text">
                             This tool analyzes news content and SP500 market data to identify correlations and potential predictive patterns.
                         </p>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label d-block">Analysis Period</label>
+                                <div class="btn-group w-100" role="group" aria-label="Analysis period selection">
+                                    <input type="radio" class="btn-check" name="dateRange" id="dateRange7" value="7" checked>
+                                    <label class="btn btn-outline-primary" for="dateRange7">7 Days</label>
+                                    
+                                    <input type="radio" class="btn-check" name="dateRange" id="dateRange14" value="14">
+                                    <label class="btn btn-outline-primary" for="dateRange14">14 Days</label>
+                                    
+                                    <input type="radio" class="btn-check" name="dateRange" id="dateRange30" value="30">
+                                    <label class="btn btn-outline-primary" for="dateRange30">30 Days</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label d-block">Stock Group Focus</label>
+                                <div class="btn-group w-100" role="group" aria-label="Stock group selection">
+                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupAll" value="all" checked>
+                                    <label class="btn btn-outline-primary" for="tickerGroupAll">All Stocks</label>
+                                    
+                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupTech" value="tech">
+                                    <label class="btn btn-outline-primary" for="tickerGroupTech">Technology</label>
+                                    
+                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupFinance" value="finance">
+                                    <label class="btn btn-outline-primary" for="tickerGroupFinance">Financial</label>
+                                    
+                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupRetail" value="retail">
+                                    <label class="btn btn-outline-primary" for="tickerGroupRetail">Retail</label>
+                                    
+                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupHealth" value="health">
+                                    <label class="btn btn-outline-primary" for="tickerGroupHealth">Healthcare</label>
+                                </div>
+                            </div>
+                        </div>
                         <button id="analyzeBtn" class="btn btn-primary">
                             <span>Analyze Market Data</span>
                         </button>
                         <div id="loadingIndicator" class="d-none mt-3">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border custom-color" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
-                            <span class="ms-2">Analyzing data...</span>
+                            <span class="ms-2 custom-color">Analyzing data...</span>
                         </div>
                     </div>
                 </div>
@@ -52,14 +86,13 @@
         <div id="resultsSection" class="d-none">
             <h2 class="display-6">Analysis Results</h2>
             
-            <!-- Container for data source warnings -->
-            <div id="dataWarningContainer" class="mb-4"></div>
-            
             <div class="row mb-4">
                 <div class="col-md-12">
                     <div class="card info-card">
                         <div class="card-body">
-                            <h5 class="card-title">Analysis Summary</h5>
+                            <h5 class="card-title">Analysis Summary 
+                                <span id="dataSourceBadge" class="badge rounded-pill ms-2" style="font-size: 0.7em; font-weight: normal;"></span>
+                            </h5>
                             <div id="analysisSummary">
                                 <div class="row align-items-center">
                                     <div class="col-md-4 text-center">
@@ -76,8 +109,28 @@
                                     </div>
                                     <div class="col-md-4 text-center">
                                         <div class="summary-metric">
+                                            <span id="stockGroupValue">All Stocks</span>
+                                            <span class="summary-label">Stock Group Focus</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
+                                            <span id="avgSentimentValue">0</span>
+                                            <span class="summary-label">Average Sentiment</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
+                                            <span id="marketVolatilityValue">0%</span>
+                                            <span class="summary-label">Market Volatility</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="summary-metric">
                                             <span id="correlationValue">0</span>
-                                            <span class="summary-label">Sentiment-Market Correlation</span>
+                                            <span class="summary-label">Sentiment/Market Correlation</span>
                                         </div>
                                     </div>
                                 </div>
@@ -92,7 +145,9 @@
                     <div class="card">
                         <div class="card-body">
                             <h3 class="card-title">Predictions</h3>
-                            <div id="predictionsContainer"></div>
+                            <div class="row">
+                                <div id="predictionsContainer" class="row g-4"></div>
+                            </div>
                         </div>
                     </div>
                 </div>

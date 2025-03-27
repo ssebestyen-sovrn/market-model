@@ -9,7 +9,15 @@ let state = {
     marketData: null,
     analysisResults: null,
     isLoading: false,
-    isUsingRealData: true
+    dateRange: 7,
+    tickerGroup: 'all',
+    tickerGroups: {
+        all: ['SPY'],
+        tech: ['AAPL', 'MSFT', 'GOOGL', 'META', 'NVDA'],
+        finance: ['JPM', 'BAC', 'GS', 'V', 'MA'],
+        retail: ['AMZN', 'WMT', 'TGT', 'KO', 'PEP'],
+        health: ['JNJ', 'PFE', 'UNH']
+    }
 };
 
 // Initialize the application
@@ -19,6 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Set up event listeners
     document.getElementById('analyzeBtn').addEventListener('click', handleAnalyzeClick);
+    
+    // Handle date range radio changes
+    document.querySelectorAll('input[name="dateRange"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.dateRange = parseInt(e.target.value);
+        });
+    });
+    
+    // Handle ticker group radio changes
+    document.querySelectorAll('input[name="tickerGroup"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.tickerGroup = e.target.value;
+        });
+    });
 });
 
 /**
@@ -31,22 +53,29 @@ async function handleAnalyzeClick() {
         // Update UI to show loading state
         setLoadingState(true);
         
-        // Fetch data
-        const [newsResponse, marketResponse] = await Promise.all([
-            API.fetchNews(),
-            API.fetchMarketData()
+        // Fetch data with selected date range
+        const [newsData, marketData] = await Promise.all([
+            API.fetchNews(state.dateRange),
+            API.fetchMarketData(state.dateRange)
         ]);
         
+        // Filter news data based on selected ticker group
+        const filteredNewsData = state.tickerGroup === 'all' 
+            ? newsData 
+            : newsData.filter(article => {
+                const tickers = state.tickerGroups[state.tickerGroup];
+                return article.relatedCompanies.some(ticker => tickers.includes(ticker));
+            });
+        
         // Store data in state
-        state.newsData = newsResponse.articles;
-        state.marketData = marketResponse.data;
-        state.isUsingRealData = newsResponse.isRealData && marketResponse.isRealData;
+        state.newsData = filteredNewsData;
+        state.marketData = marketData;
         
         // Log article count information
-        logNewsDataInfo(newsResponse.articles);
+        logNewsDataInfo(filteredNewsData);
         
         // Analyze data
-        const analysisResults = Analysis.analyzeData(newsResponse.articles, marketResponse.data);
+        const analysisResults = Analysis.analyzeData(filteredNewsData, marketData);
         state.analysisResults = analysisResults;
         
         // Save results to database (in a real app, this would use Supabase)
@@ -56,13 +85,8 @@ async function handleAnalyzeClick() {
         updateUI();
         
     } catch (error) {
-        console.error('Detailed error information:', {
-            message: error.message,
-            stack: error.stack,
-            newsData: state.newsData,
-            marketData: state.marketData
-        });
-        alert(`An error occurred while analyzing data: ${error.message}\n\nPlease check the browser console (F12) for more details.`);
+        console.error('Error analyzing data:', error);
+        alert('An error occurred while analyzing data. Please try again.');
     } finally {
         setLoadingState(false);
     }
@@ -154,17 +178,28 @@ function updateUI() {
         introCard.classList.add('d-none');
     }
     
-    // Add data source indicator
-    const dataSourceIndicator = document.createElement('div');
-    dataSourceIndicator.className = `alert ${state.isUsingRealData ? 'alert-success' : 'alert-warning'} mb-3`;
-    dataSourceIndicator.innerHTML = `
-        <i class="fas ${state.isUsingRealData ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
-        ${state.isUsingRealData ? 'Using real-time market data' : 'Using sample data (API limits reached or error occurred)'}
-    `;
+    // Update data source badge
+    const usingSampleMarketData = state.marketData.some(data => data.isSampleData);
+    const usingSampleNewsData = state.newsData.some(data => data.isSampleData);
+    const dataSourceBadge = document.getElementById('dataSourceBadge');
     
-    // Insert the indicator at the top of the results section
-    const resultsSection = document.getElementById('resultsSection');
-    resultsSection.insertBefore(dataSourceIndicator, resultsSection.firstChild);
+    if (usingSampleMarketData && usingSampleNewsData) {
+        dataSourceBadge.textContent = 'Sample Data (All)';
+        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+        dataSourceBadge.title = 'Using simulated market and news data';
+    } else if (usingSampleMarketData) {
+        dataSourceBadge.textContent = 'Sample Data (Market)';
+        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+        dataSourceBadge.title = 'Using real news but simulated market data';
+    } else if (usingSampleNewsData) {
+        dataSourceBadge.textContent = 'Sample Data (News)';
+        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+        dataSourceBadge.title = 'Using real market but simulated news data';
+    } else {
+        dataSourceBadge.textContent = 'Live Data';
+        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-success text-white';
+        dataSourceBadge.title = 'Using real-time market and news data';
+    }
     
     // Update analysis summary metrics
     updateAnalysisSummary(state.analysisResults, state.newsData);
@@ -214,6 +249,37 @@ function updateAnalysisSummary(analysisResults, newsData) {
     } else {
         correlationElement.classList.add('neutral');
     }
+    
+    // Update stock group focus
+    const stockGroupElement = document.getElementById('stockGroupValue');
+    const groupLabels = {
+        all: 'All Stocks',
+        tech: 'Technology',
+        finance: 'Financial',
+        retail: 'Retail & Consumer',
+        health: 'Healthcare'
+    };
+    stockGroupElement.textContent = groupLabels[state.tickerGroup];
+    
+    // Calculate and update average sentiment score
+    const avgSentiment = newsData.reduce((sum, article) => sum + article.sentimentScore, 0) / totalArticles;
+    const avgSentimentElement = document.getElementById('avgSentimentValue');
+    avgSentimentElement.textContent = avgSentiment.toFixed(2);
+    avgSentimentElement.className = '';
+    if (avgSentiment > 0.1) {
+        avgSentimentElement.classList.add('positive');
+    } else if (avgSentiment < -0.1) {
+        avgSentimentElement.classList.add('negative');
+    } else {
+        avgSentimentElement.classList.add('neutral');
+    }
+    
+    // Calculate and update market volatility
+    const marketValues = analysisResults.correlationData.map(d => d.marketValue);
+    const marketChanges = analysisResults.correlationData.map(d => d.marketChange);
+    const volatility = Math.sqrt(marketChanges.reduce((sum, change) => sum + Math.pow(change, 2), 0) / marketChanges.length);
+    const volatilityPercent = (volatility / marketValues[0]) * 100;
+    document.getElementById('marketVolatilityValue').textContent = `${volatilityPercent.toFixed(1)}%`;
 }
 
 /**

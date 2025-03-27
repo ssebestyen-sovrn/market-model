@@ -11,17 +11,9 @@ const Analysis = {
      * @returns {Object} Analysis results
      */
     analyzeData: (newsData, marketData) => {
-        // Validate input data
-        if (!newsData || !Array.isArray(newsData)) {
-            throw new Error('Invalid news data: newsData must be an array');
-        }
-        if (!marketData || !Array.isArray(marketData)) {
-            throw new Error('Invalid market data: marketData must be an array');
-        }
-        
         // Group news by date
         const newsByDate = newsData.reduce((acc, news) => {
-            const date = news.publishedAt.split('T')[0]; // Extract date part
+            const date = news.publishedAt.split('T')[0];
             if (!acc[date]) {
                 acc[date] = [];
             }
@@ -61,44 +53,47 @@ const Analysis = {
                 positive: positiveCount / totalArticles,
                 negative: negativeCount / totalArticles,
                 neutral: neutralCount / totalArticles,
-                scoreOld: (positiveCount - negativeCount) / totalArticles, // Keep for back-compatibility
-                score: avgSentimentScore, // New granular score between -1 and 1
-                articlesCount: totalArticles, // Store the total count of articles for this date
-                positiveCount: positiveCount, // Store absolute count for debugging
-                negativeCount: negativeCount, // Store absolute count for debugging
-                neutralCount: neutralCount    // Store absolute count for debugging
+                scoreOld: (positiveCount - negativeCount) / totalArticles,
+                score: avgSentimentScore,
+                articlesCount: totalArticles,
+                positiveCount: positiveCount,
+                negativeCount: negativeCount,
+                neutralCount: neutralCount,
+                relatedCompanies: Array.from(new Set(articles.flatMap(a => a.relatedCompanies))),
+                news: articles // Add the news articles to the date's data
             };
         }
         
-        // Match market data with sentiment data
-        const correlationData = marketData.map(market => {
-            if (!market || !market.date) {
-                console.warn('Invalid market data point:', market);
-                return null;
-            }
-            
-            const date = market.date;
-            const sentiment = sentimentByDate[date] || { 
-                positive: 0, negative: 0, neutral: 0, 
-                scoreOld: 0, score: 0, articlesCount: 0,
-                positiveCount: 0, negativeCount: 0, neutralCount: 0
-            };
-            
-            return {
-                date,
-                marketValue: market.value || 0,
-                marketChange: market.change || 0,
-                sentimentScore: sentiment.score,
-                sentimentScoreOld: sentiment.scoreOld,
-                positive: sentiment.positive,
-                negative: sentiment.negative,
-                neutral: sentiment.neutral,
-                articlesCount: sentiment.articlesCount,
-                positiveCount: sentiment.positiveCount,
-                negativeCount: sentiment.negativeCount,
-                neutralCount: sentiment.neutralCount
-            };
-        }).filter(Boolean); // Remove any null entries
+        // Match market data with sentiment data and sort by date
+        const correlationData = marketData
+            .map(market => {
+                const date = market.date;
+                const sentiment = sentimentByDate[date] || { 
+                    positive: 0, negative: 0, neutral: 0, 
+                    scoreOld: 0, score: 0, articlesCount: 0,
+                    positiveCount: 0, negativeCount: 0, neutralCount: 0,
+                    relatedCompanies: [],
+                    news: [] // Add empty news array for dates without news
+                };
+                
+                return {
+                    date,
+                    marketValue: market.value,
+                    marketChange: market.change,
+                    sentimentScore: sentiment.score,
+                    sentimentScoreOld: sentiment.scoreOld,
+                    positive: sentiment.positive,
+                    negative: sentiment.negative,
+                    neutral: sentiment.neutral,
+                    articlesCount: sentiment.articlesCount,
+                    positiveCount: sentiment.positiveCount,
+                    negativeCount: sentiment.negativeCount,
+                    neutralCount: sentiment.neutralCount,
+                    relatedCompanies: sentiment.relatedCompanies,
+                    news: sentiment.news // Include news articles in the correlation data
+                };
+            })
+            .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
         
         // Calculate correlation between sentiment and market changes
         const correlations = {
@@ -117,7 +112,7 @@ const Analysis = {
         };
         
         // Make predictions based on correlations
-        const predictions = Analysis.makePredictions(correlationData, correlations, newsData);
+        const predictions = Analysis.makePredictions(correlationData, correlations);
         
         return {
             correlationData,
@@ -236,108 +231,101 @@ const Analysis = {
      * @param {Object} correlations Correlation results
      * @returns {Array} Predictions
      */
-    makePredictions: (data, correlations, newsData) => {
-        // Get more recent sentiment data
-        const recentData = [...data].sort((a, b) => 
-            new Date(b.date) - new Date(a.date)
-        ).slice(0, 7);
+    makePredictions: (data, correlations) => {
+        // Get the last 7 days of data for next day prediction
+        const recentData = data.slice(-7);
+        // Get the last 14 days of data for next week prediction
+        const extendedData = data.slice(-14);
         
-        // Calculate weighted average of recent sentiment (newer news has more weight)
-        const totalWeight = recentData.reduce((sum, _, index) => sum + (7 - index), 0);
-        const weightedSentiment = recentData.reduce((sum, d, index) => 
-            sum + (d.sentimentScore * (7 - index)), 0) / totalWeight;
+        console.log('Recent data dates:', recentData.map(d => d.date));
+        console.log('Extended data dates:', extendedData.map(d => d.date));
         
-        // Calculate standard deviation of sentiment scores to measure consistency
-        const sentimentValues = recentData.map(d => d.sentimentScore);
-        const avgSentiment = sentimentValues.reduce((sum, val) => sum + val, 0) / sentimentValues.length;
-        const sentimentVariance = sentimentValues.reduce((sum, val) => sum + Math.pow(val - avgSentiment, 2), 0) / sentimentValues.length;
-        const sentimentStdDev = Math.sqrt(sentimentVariance);
+        // Calculate weighted sentiment scores for recent data
+        const recentSentiment = recentData.reduce((acc, day) => {
+            return acc + (day.sentimentScore * day.articlesCount);
+        }, 0) / recentData.reduce((acc, day) => acc + day.articlesCount, 0);
         
-        // Get sentiment trend (improving or worsening)
-        const sentimentTrend = recentData.length > 1 ? 
-            recentData[0].sentimentScore - recentData[recentData.length - 1].sentimentScore : 0;
+        // Calculate weighted sentiment scores for extended data
+        const extendedSentiment = extendedData.reduce((acc, day) => {
+            return acc + (day.sentimentScore * day.articlesCount);
+        }, 0) / extendedData.reduce((acc, day) => acc + day.articlesCount, 0);
         
-        // Calculate article counts and sentiments for confidence
-        // This processes ALL news articles (up to 50 per day) for the analysis
-        let totalPositiveCount = 0;
-        let totalNegativeCount = 0;
-        let totalNeutralCount = 0;
-        let totalArticleCount = 0;
-        
-        recentData.forEach(day => {
-            // Using articlesCount property that contains actual count of articles for this day
-            const articlesForDay = day.articlesCount || 0;
-            totalArticleCount += articlesForDay;
+        // Find most influential stories for recent data (last 7 days)
+        const recentNews = recentData.flatMap(day => day.news || [])
+            .sort((a, b) => Math.abs(b.sentimentScore) - Math.abs(a.sentimentScore))
+            .slice(0, 5);
             
-            // Calculate estimated counts of sentiment categories
-            totalPositiveCount += Math.round(day.positive * articlesForDay);
-            totalNegativeCount += Math.round(day.negative * articlesForDay);
-            totalNeutralCount += Math.round(day.neutral * articlesForDay);
+        // Find most influential stories for extended data (last 14 days)
+        const extendedNews = extendedData.flatMap(day => day.news || [])
+            .sort((a, b) => Math.abs(b.sentimentScore) - Math.abs(a.sentimentScore))
+            .slice(0, 5);
+            
+        console.log('Recent news selected:', recentNews);
+        console.log('Extended news selected:', extendedNews);
+        
+        // Track keyword frequencies separately for each timeframe
+        const dayKeywordFrequency = {};
+        const weekKeywordFrequency = {};
+        
+        // Process keywords for recent data
+        recentNews.forEach(article => {
+            const words = (article.title + ' ' + article.description).toLowerCase().split(/\s+/);
+            words.forEach(word => {
+                if (word.length > 3) { // Only count words longer than 3 characters
+                    dayKeywordFrequency[word] = (dayKeywordFrequency[word] || 0) + 1;
+                }
+            });
         });
         
-        // Make prediction based on correlation strength and sentiment
-        const nextDayCorrelation = correlations.sentimentToNextDayMarket;
+        // Process keywords for extended data
+        extendedNews.forEach(article => {
+            const words = (article.title + ' ' + article.description).toLowerCase().split(/\s+/);
+            words.forEach(word => {
+                if (word.length > 3) { // Only count words longer than 3 characters
+                    weekKeywordFrequency[word] = (weekKeywordFrequency[word] || 0) + 1;
+                }
+            });
+        });
         
-        // Enhanced prediction model using weighted sentiment and recent volatility
-        const volatilityFactor = Math.min(sentimentStdDev * 3, 1); // Higher volatility = less certain prediction
-        const trendFactor = Math.min(Math.abs(sentimentTrend) * 2, 1); // Stronger trend = stronger prediction
-        
-        // Calculate prediction strength with all factors
-        const rawStrength = weightedSentiment * nextDayCorrelation;
-        const adjustedStrength = rawStrength * (1 - volatilityFactor * 0.3) * (1 + trendFactor * 0.2);
-        
-        // Determine prediction direction
-        let direction = "neutral";
-        if (Math.abs(adjustedStrength) > 0.05) {
-            direction = adjustedStrength > 0 ? "up" : "down";
-        }
-        
-        // More nuanced confidence calculation
-        const correlationConfidence = Math.abs(nextDayCorrelation) * 40; // Up to 40% from correlation
-        const consistencyConfidence = (1 - Math.min(sentimentStdDev, 0.5) / 0.5) * 20; // Up to 20% from consistency
-        const trendConfidence = Math.min(Math.abs(sentimentTrend) * 10, 15); // Up to 15% from trend
-        const dataPointsConfidence = Math.min(recentData.length / 7 * 15, 15); // Up to 15% from amount of data
-        const articleCountConfidence = Math.min(totalArticleCount / 50 * 10, 10); // Up to 10% from article count
-        
-        // Total confidence capped at 95%
-        const totalConfidence = Math.min(
-            correlationConfidence + 
-            consistencyConfidence + 
-            trendConfidence + 
-            dataPointsConfidence + 
-            articleCountConfidence, 
-            95
-        );
-        
-        // Generate detailed prediction text with article counts
-        const predictions = [
-            {
-                timeframe: "Next Day",
-                direction: direction,
-                confidence: Math.round(totalConfidence),
-                sentiment: weightedSentiment.toFixed(2),
-                explanation: `Based on analysis of ${totalArticleCount} news articles (${totalPositiveCount} positive, ${totalNegativeCount} negative, ${totalNeutralCount} neutral) from ${recentData.length} days, the weighted sentiment score is ${weightedSentiment.toFixed(2)}. The sentiment trend is ${sentimentTrend > 0.05 ? "improving" : sentimentTrend < -0.05 ? "declining" : "stable"} (${sentimentTrend.toFixed(2)}) with a correlation of ${nextDayCorrelation.toFixed(2)}. Market ${direction === "neutral" ? "is expected to remain stable" : "is expected to move " + direction.toUpperCase()}.`
-            }
-        ];
-        
-        // Add a week prediction with adjusted confidence
-        // Use more trend-focused factors for weekly prediction
-        const weekDirection = sentimentTrend > 0.1 ? 
-            "up" : sentimentTrend < -0.1 ? 
-            "down" : direction; // Default to daily direction if trend is weak
+        // Get top keywords for each timeframe
+        const dayKeywords = Object.entries(dayKeywordFrequency)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 4)
+            .map(([word]) => word);
             
-        // Weekly prediction has lower confidence
-        const weekConfidence = Math.round(totalConfidence * 0.75);
+        const weekKeywords = Object.entries(weekKeywordFrequency)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 4)
+            .map(([word]) => word);
         
-        predictions.push({
+        // Calculate market volatility
+        const volatility = recentData.reduce((acc, day) => {
+            return acc + Math.abs(day.marketChange);
+        }, 0) / recentData.length;
+        
+        // Calculate sentiment trend
+        const sentimentTrend = recentData.slice(-3).reduce((acc, day) => {
+            return acc + day.sentimentScore;
+        }, 0) / 3;
+        
+        // Enhanced prediction model
+        const nextDayPrediction = {
+            timeframe: "Next Day",
+            direction: recentSentiment > 0.1 ? 'UP' : recentSentiment < -0.1 ? 'DOWN' : 'NEUTRAL',
+            confidence: Math.min(Math.abs(recentSentiment * 100), 100),
+            sentiment: recentSentiment,
+            explanation: `Market sentiment is ${recentSentiment > 0.1 ? 'positive' : recentSentiment < -0.1 ? 'negative' : 'neutral'} and ${sentimentTrend > 0.1 ? 'improving' : sentimentTrend < -0.1 ? 'declining' : 'stable'}.\n\nKey stories:\n• ${recentNews.slice(0, 2).map(n => n.title).join('\n• ')}\n\nTrending topics:\n${dayKeywords.join(', ')}`
+        };
+        
+        const nextWeekPrediction = {
             timeframe: "Next Week",
-            direction: weekDirection,
-            confidence: weekConfidence,
-            sentiment: (weightedSentiment + sentimentTrend).toFixed(2),
-            explanation: `Extended prediction based on ${totalArticleCount} articles across ${recentData.length} days with sentiment trend of ${sentimentTrend.toFixed(2)}. The overall sentiment is ${avgSentiment > 0.1 ? "positive" : avgSentiment < -0.1 ? "negative" : "neutral"} (${avgSentiment.toFixed(2)}) with volatility of ${sentimentStdDev.toFixed(2)}.`
-        });
+            direction: extendedSentiment > 0.1 ? 'UP' : extendedSentiment < -0.1 ? 'DOWN' : 'NEUTRAL',
+            confidence: Math.min(Math.abs(extendedSentiment * 100), 100),
+            sentiment: extendedSentiment,
+            explanation: `Market sentiment is ${extendedSentiment > 0.1 ? 'positive' : extendedSentiment < -0.1 ? 'negative' : 'neutral'} with ${volatility > 5 ? 'high' : volatility > 2 ? 'moderate' : 'low'} volatility.\n\nKey stories:\n• ${extendedNews.slice(0, 2).map(n => n.title).join('\n• ')}\n\nTrending topics:\n${weekKeywords.join(', ')}`
+        };
         
-        return predictions;
+        return [nextDayPrediction, nextWeekPrediction];
     },
     
     /**
