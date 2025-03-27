@@ -376,5 +376,14 @@ const Analysis = {
         explanation += `Confidence level: ${confidence}%.`;
         
         return explanation;
+    },
+    
+    // Stock focus groups
+    stockFocusGroups: {
+        'Tech Giants': ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'NFLX'],
+        'Financial Services': ['JPM', 'BAC', 'GS', 'MA', 'V'],
+        'Energy & Industrial': ['XOM', 'CVX', 'BP', 'BA', 'LMT'],
+        'Consumer Goods': ['WMT', 'TGT', 'KO', 'PEP'],
+        'Entertainment': ['DIS', 'NFLX', 'CMCSA', 'PARA']
     }
 }; 

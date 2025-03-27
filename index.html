@@ -31,14 +31,15 @@
             <div class="col-md-12">
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h2 class="card-title">4 News & Market Correlation Analysis</h2>
+                        <h2 class="card-title">5 News & Market Correlation Analysis</h2>
                         <p class="card-text">
                             This tool analyzes news content and SP500 market data to identify correlations and potential predictive patterns.
                         </p>
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <!-- Analysis Period -->
+                            <div class="col-12 mb-3">
                                 <label class="form-label d-block">Analysis Period</label>
-                                <div class="btn-group w-100" role="group" aria-label="Analysis period selection">
+                                <div class="btn-group w-100" role="group" aria-label="Date range selection">
                                     <input type="radio" class="btn-check" name="dateRange" id="dateRange7" value="7" checked>
                                     <label class="btn btn-outline-primary" for="dateRange7">7 Days</label>
                                     
@@ -49,23 +50,28 @@
                                     <label class="btn btn-outline-primary" for="dateRange30">30 Days</label>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+
+                            <!-- Stock Group Focus -->
+                            <div class="col-12">
                                 <label class="form-label d-block">Stock Group Focus</label>
                                 <div class="btn-group w-100" role="group" aria-label="Stock group selection">
-                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupAll" value="all" checked>
-                                    <label class="btn btn-outline-primary" for="tickerGroupAll">All Stocks</label>
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupAll" value="" checked>
+                                    <label class="btn btn-outline-primary" for="focusGroupAll">All Stocks</label>
                                     
-                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupTech" value="tech">
-                                    <label class="btn btn-outline-primary" for="tickerGroupTech">Technology</label>
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupTech" value="Tech Giants">
+                                    <label class="btn btn-outline-primary" for="focusGroupTech">Tech Giants</label>
                                     
-                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupFinance" value="finance">
-                                    <label class="btn btn-outline-primary" for="tickerGroupFinance">Financial</label>
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupFinance" value="Financial Services">
+                                    <label class="btn btn-outline-primary" for="focusGroupFinance">Financial</label>
                                     
-                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupRetail" value="retail">
-                                    <label class="btn btn-outline-primary" for="tickerGroupRetail">Retail</label>
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupEnergy" value="Energy & Industrial">
+                                    <label class="btn btn-outline-primary" for="focusGroupEnergy">Energy</label>
                                     
-                                    <input type="radio" class="btn-check" name="tickerGroup" id="tickerGroupHealth" value="health">
-                                    <label class="btn btn-outline-primary" for="tickerGroupHealth">Healthcare</label>
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupConsumer" value="Consumer Goods">
+                                    <label class="btn btn-outline-primary" for="focusGroupConsumer">Consumer</label>
+                                    
+                                    <input type="radio" class="btn-check" name="focusGroup" id="focusGroupEnt" value="Entertainment">
+                                    <label class="btn btn-outline-primary" for="focusGroupEnt">Entertainment</label>
                                 </div>
                             </div>
                         </div>

@@ -23,34 +23,76 @@ export default async function handler(req, res) {
     try {
         const { dateRange = 7 } = req.query;
         const apiKey = process.env.NEWS_API_KEY || 'e713140ac78641bd91ad44b7ce192d76';
-        const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=50&apiKey=${apiKey}`;
         
-        console.log('Fetching news from NewsAPI...');
+        // Calculate date range
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - dateRange);
         
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        // Format dates for NewsAPI
+        const fromDate = startDate.toISOString().split('T')[0];
+        const toDate = endDate.toISOString().split('T')[0];
+        
+        console.log('Fetching news from NewsAPI...', { fromDate, toDate, dateRange });
+
+        // Calculate number of pages needed based on date range
+        // Aim for roughly 15-20 articles per day
+        const targetArticlesPerDay = 20;
+        const numDays = Math.min(parseInt(dateRange), 30); // Cap at 30 days
+        const desiredArticles = numDays * targetArticlesPerDay;
+        const numPages = Math.ceil(desiredArticles / 100); // 100 is max pageSize
+        
+        console.log(`Fetching ${numPages} pages of news for ${numDays} days...`);
+        
+        // Fetch multiple pages in parallel
+        const pagePromises = [];
+        for (let page = 1; page <= numPages; page++) {
+            const url = `https://newsapi.org/v2/everything?` + 
+                `q=(business OR finance OR market OR stock)&` +
+                `from=${fromDate}&` +
+                `to=${toDate}&` +
+                `language=en&` +
+                `sortBy=publishedAt&` +
+                `pageSize=100&` +
+                `page=${page}&` +
+                `apiKey=${apiKey}`;
+            
+            pagePromises.push(
+                fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    }
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`NewsAPI error: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+            );
+        }
+        
+        // Wait for all pages to be fetched
+        const results = await Promise.all(pagePromises);
+        
+        // Combine articles from all pages
+        let allArticles = [];
+        results.forEach(result => {
+            if (result.articles && Array.isArray(result.articles)) {
+                allArticles = allArticles.concat(result.articles);
             }
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('NewsAPI error response:', errorText);
-            throw new Error(`NewsAPI error: ${response.status} ${response.statusText}`);
-        }
         
-        const data = await response.json();
+        console.log(`Retrieved ${allArticles.length} total articles`);
         
-        // Check if we have valid data
-        if (!data.articles || data.articles.length === 0) {
-            console.warn('No articles returned from NewsAPI');
-            throw new Error('No articles returned from NewsAPI');
-        }
+        // Remove duplicates based on title
+        const uniqueArticles = Array.from(
+            new Map(allArticles.map(article => [article.title, article])).values()
+        );
         
-        console.log(`Retrieved ${data.articles.length} articles from NewsAPI`);
+        console.log(`After removing duplicates: ${uniqueArticles.length} articles`);
         
         // Process articles to include sentiment and other required properties
-        const processedArticles = data.articles.map((article, index) => {
+        const processedArticles = uniqueArticles.map((article, index) => {
             // Analyze sentiment based on title and description
             const sentimentAnalysis = analyzeSentiment(article.title + ' ' + (article.description || ''));
             
@@ -70,27 +112,12 @@ export default async function handler(req, res) {
             };
         });
         
-        // Filter out articles older than the specified date range
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - dateRange);
+        // Sort by date, newest first
+        processedArticles.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
         
-        const recentArticles = processedArticles.filter(article => {
-            const publishDate = new Date(article.publishedAt);
-            return publishDate >= cutoffDate;
-        });
+        console.log(`Returning ${processedArticles.length} processed articles`);
         
-        // De-duplicate articles by title to ensure we have distinct stories
-        const uniqueArticleMap = new Map();
-        recentArticles.forEach(article => {
-            if (!uniqueArticleMap.has(article.title)) {
-                uniqueArticleMap.set(article.title, article);
-            }
-        });
-        
-        const uniqueArticles = Array.from(uniqueArticleMap.values());
-        console.log(`Returning ${uniqueArticles.length} unique recent articles`);
-        
-        res.status(200).json(uniqueArticles);
+        res.status(200).json(processedArticles);
     } catch (error) {
         console.error('Error fetching news data:', error);
         res.status(500).json({ 
