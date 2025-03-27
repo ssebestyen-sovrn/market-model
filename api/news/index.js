@@ -36,7 +36,6 @@ export default async function handler(req, res) {
         console.log('Fetching news from NewsAPI...', { fromDate, toDate, dateRange });
 
         // Calculate number of pages needed based on date range
-        // Aim for roughly 15-20 articles per day
         const targetArticlesPerDay = 20;
         const numDays = Math.min(parseInt(dateRange), 30); // Cap at 30 days
         const desiredArticles = numDays * targetArticlesPerDay;
@@ -60,13 +59,34 @@ export default async function handler(req, res) {
             pagePromises.push(
                 fetch(url, {
                     headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'X-Api-Key': apiKey,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     }
-                }).then(response => {
+                }).then(async response => {
                     if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('NewsAPI error response:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorText
+                        });
+
+                        // If we get a 426, we need to use HTTPS
+                        if (response.status === 426) {
+                            console.log('Retrying with HTTPS...');
+                            // Fall back to sample data for now
+                            throw new Error('NewsAPI requires HTTPS - using sample data');
+                        }
+
                         throw new Error(`NewsAPI error: ${response.status} ${response.statusText}`);
                     }
                     return response.json();
+                }).catch(error => {
+                    console.error('Error fetching page:', error);
+                    // Return null for this page, we'll filter these out later
+                    return null;
                 })
             );
         }
@@ -74,13 +94,19 @@ export default async function handler(req, res) {
         // Wait for all pages to be fetched
         const results = await Promise.all(pagePromises);
         
-        // Combine articles from all pages
+        // Filter out failed requests and combine articles
         let allArticles = [];
         results.forEach(result => {
-            if (result.articles && Array.isArray(result.articles)) {
+            if (result && result.articles && Array.isArray(result.articles)) {
                 allArticles = allArticles.concat(result.articles);
             }
         });
+        
+        // If we got no articles, fall back to sample data
+        if (allArticles.length === 0) {
+            console.log('No articles retrieved, using sample data');
+            throw new Error('No articles available - using sample data');
+        }
         
         console.log(`Retrieved ${allArticles.length} total articles`);
         

@@ -14,17 +14,30 @@ const API = {
      */
     fetchNews: async (dateRange = 7) => {
         try {
-            // Use our proxy API endpoint
-            const url = `/api/news?dateRange=${dateRange}`;
+            // Use our proxy API endpoint with explicit HTTPS
+            const baseUrl = window.location.hostname === 'localhost' ? '' : 'https://market-model.vercel.app';
+            const url = `${baseUrl}/api/news?dateRange=${dateRange}`;
             
-            console.log('Fetching news data from proxy API...');
+            console.log('Fetching news data from:', url);
             
-            const response = await fetch(url);
-            const data = await response.json();
-            
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
             if (!response.ok) {
-                throw new Error(data.details || data.error || 'Failed to fetch news data');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('News API error:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    details: errorData
+                });
+                throw new Error(errorData.details || `NewsAPI error: ${response.status} ${response.statusText}`);
             }
+
+            const data = await response.json();
             
             // Check if we have valid data
             if (!Array.isArray(data) || data.length === 0) {
