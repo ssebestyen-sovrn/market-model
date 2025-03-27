@@ -420,9 +420,9 @@ const Visualization = {
         const marketValues = filteredData.map(d => d.marketValue);
         const sentimentScores = filteredData.map(d => d.sentimentScore);
         
-        // Use fixed range for sentiment score axis (-0.25 to 0.25)
-        const minSentiment = -0.25;
-        const maxSentiment = 0.25;
+        // Use fixed range for sentiment score axis (-1 to 1)
+        const minSentiment = -1;
+        const maxSentiment = 1;
         
         window.marketTrendChart.data.labels = trendLabels;
         window.marketTrendChart.data.datasets[0].data = marketValues;
