@@ -14,68 +14,26 @@ const API = {
      */
     fetchNews: async (dateRange = 7) => {
         try {
-            // NewsAPI.org endpoint for top business headlines
-            const apiKey = 'e713140ac78641bd91ad44b7ce192d76';
-            const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=50&apiKey=${apiKey}`;
+            // Use our proxy API endpoint
+            const url = `/api/news?dateRange=${dateRange}`;
+            
+            console.log('Fetching news data from proxy API...');
             
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error('Failed to fetch news data');
             }
             
-            const data = await response.json();
+            const articles = await response.json();
             
             // Check if we have valid data
-            if (!data.articles || data.articles.length === 0) {
-                console.warn('NewsAPI returned invalid data or rate limit exceeded:', data);
+            if (!Array.isArray(articles) || articles.length === 0) {
+                console.warn('No articles returned from API');
                 return API.fallbackToSampleNews(dateRange);
             }
             
-            console.log(`NewsAPI returned ${data.articles.length} articles`);
-            
-            // Process articles to include sentiment and other required properties
-            const processedArticles = data.articles.map((article, index) => {
-                // Analyze sentiment based on title and description
-                const sentimentAnalysis = API.analyzeSentiment(article.title + ' ' + (article.description || ''));
-                
-                // Extract potential company tickers from content
-                const relatedCompanies = API.extractCompanyTickers(article.title + ' ' + (article.description || ''));
-                
-                return {
-                    id: index + 1,
-                    title: article.title,
-                    description: article.description || 'No description available',
-                    source: article.source.name,
-                    url: article.url,
-                    publishedAt: article.publishedAt,
-                    sentiment: sentimentAnalysis.category,
-                    sentimentScore: sentimentAnalysis.score,
-                    relatedCompanies: relatedCompanies
-                };
-            });
-            
-            // Filter out articles older than the specified date range
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - dateRange);
-            
-            const recentArticles = processedArticles.filter(article => {
-                const publishDate = new Date(article.publishedAt);
-                return publishDate >= cutoffDate;
-            });
-            
-            // De-duplicate articles by title to ensure we have distinct stories
-            const uniqueArticleMap = new Map();
-            recentArticles.forEach(article => {
-                if (!uniqueArticleMap.has(article.title)) {
-                    uniqueArticleMap.set(article.title, article);
-                }
-            });
-            
-            const uniqueArticles = Array.from(uniqueArticleMap.values());
-            console.log(`After filtering, we have ${uniqueArticles.length} unique recent articles`);
-            
-            // Return all unique articles that are available, or fall back to sample data if none
-            return uniqueArticles.length > 0 ? uniqueArticles : API.fallbackToSampleNews(dateRange);
+            console.log(`Retrieved ${articles.length} articles`);
+            return articles;
             
         } catch (error) {
             console.error('Error fetching news data:', error);

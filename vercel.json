@@ -25,6 +25,10 @@
       "dest": "/api/market-data/index.js"
     },
     {
+      "src": "/api/news",
+      "dest": "/api/news/index.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
