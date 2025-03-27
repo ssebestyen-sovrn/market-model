@@ -25,17 +25,29 @@ export default async function handler(req, res) {
         const apiKey = process.env.NEWS_API_KEY || 'e713140ac78641bd91ad44b7ce192d76';
         const url = `https://newsapi.org/v2/top-headlines?country=us&category=business&pageSize=50&apiKey=${apiKey}`;
         
-        const response = await fetch(url);
+        console.log('Fetching news from NewsAPI...');
+        
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+
         if (!response.ok) {
-            throw new Error('Failed to fetch news data');
+            const errorText = await response.text();
+            console.error('NewsAPI error response:', errorText);
+            throw new Error(`NewsAPI error: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
         
         // Check if we have valid data
         if (!data.articles || data.articles.length === 0) {
+            console.warn('No articles returned from NewsAPI');
             throw new Error('No articles returned from NewsAPI');
         }
+        
+        console.log(`Retrieved ${data.articles.length} articles from NewsAPI`);
         
         // Process articles to include sentiment and other required properties
         const processedArticles = data.articles.map((article, index) => {
@@ -76,11 +88,15 @@ export default async function handler(req, res) {
         });
         
         const uniqueArticles = Array.from(uniqueArticleMap.values());
+        console.log(`Returning ${uniqueArticles.length} unique recent articles`);
         
         res.status(200).json(uniqueArticles);
     } catch (error) {
         console.error('Error fetching news data:', error);
-        res.status(500).json({ error: 'Failed to fetch news data' });
+        res.status(500).json({ 
+            error: 'Failed to fetch news data',
+            details: error.message
+        });
     }
 }
 

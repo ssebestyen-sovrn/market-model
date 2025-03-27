@@ -20,20 +20,20 @@ const API = {
             console.log('Fetching news data from proxy API...');
             
             const response = await fetch(url);
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to fetch news data');
+                throw new Error(data.details || data.error || 'Failed to fetch news data');
             }
             
-            const articles = await response.json();
-            
             // Check if we have valid data
-            if (!Array.isArray(articles) || articles.length === 0) {
+            if (!Array.isArray(data) || data.length === 0) {
                 console.warn('No articles returned from API');
                 return API.fallbackToSampleNews(dateRange);
             }
             
-            console.log(`Retrieved ${articles.length} articles`);
-            return articles;
+            console.log(`Retrieved ${data.length} articles`);
+            return data;
             
         } catch (error) {
             console.error('Error fetching news data:', error);
