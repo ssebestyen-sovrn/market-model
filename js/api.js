@@ -539,56 +539,29 @@ const API = {
     
     /**
      * Fetch real market data for S&P 500 index
-     * Uses Yahoo Finance API to get actual market data
+     * Uses our proxy API endpoint to get Yahoo Finance data
      * @param {number} dateRange Number of days to analyze (default: 7)
      * @returns {Promise} Promise object with market data
      */
     fetchMarketData: async (dateRange = 7) => {
         try {
-            // Yahoo Finance API endpoint for S&P 500 (^GSPC)
-            const symbol = '^GSPC';
-            const period1 = Math.floor(Date.now() / 1000) - (dateRange * 24 * 60 * 60); // Convert to Unix timestamp
-            const period2 = Math.floor(Date.now() / 1000);
+            // Use our proxy API endpoint
+            const url = `/api/market-data?dateRange=${dateRange}`;
             
-            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=1d`;
-            
-            console.log('Fetching S&P 500 data from Yahoo Finance API...');
+            console.log('Fetching S&P 500 data from proxy API...');
             
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`);
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
             
-            const data = await response.json();
+            const marketData = await response.json();
             
-            if (!data.chart || !data.chart.result || data.chart.result.length === 0) {
-                throw new Error('Invalid data returned from Yahoo Finance API');
+            if (!Array.isArray(marketData) || marketData.length === 0) {
+                throw new Error('Invalid data returned from API');
             }
             
-            const result = data.chart.result[0];
-            const timestamps = result.timestamp;
-            const quotes = result.indicators.quote[0];
-            
-            console.log(`Retrieved ${timestamps.length} days of market data`);
-            
-            // Process the data into our required format
-            const marketData = timestamps.map((timestamp, index) => {
-                const date = new Date(timestamp * 1000).toISOString().split('T')[0];
-                const value = quotes.close[index];
-                const prevValue = index > 0 ? quotes.close[index - 1] : value;
-                const change = value - prevValue;
-                const percentChange = prevValue ? (change / prevValue) * 100 : 0;
-                
-                return {
-                    date: date,
-                    value: parseFloat(value.toFixed(2)),
-                    change: parseFloat(change.toFixed(2)),
-                    percentChange: parseFloat(percentChange.toFixed(2))
-                };
-            });
-            
-            console.log(`Processed ${marketData.length} days of market data with real values`);
-            
+            console.log(`Retrieved ${marketData.length} days of market data`);
             return marketData;
             
         } catch (error) {
