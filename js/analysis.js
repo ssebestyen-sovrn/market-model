@@ -237,9 +237,6 @@ const Analysis = {
         // Get the last 14 days of data for next week prediction
         const extendedData = data.slice(-14);
         
-        console.log('Recent data dates:', recentData.map(d => d.date));
-        console.log('Extended data dates:', extendedData.map(d => d.date));
-        
         // Calculate weighted sentiment scores for recent data
         const recentSentiment = recentData.reduce((acc, day) => {
             return acc + (day.sentimentScore * day.articlesCount);
@@ -259,9 +256,6 @@ const Analysis = {
         const extendedNews = extendedData.flatMap(day => day.news || [])
             .sort((a, b) => Math.abs(b.sentimentScore) - Math.abs(a.sentimentScore))
             .slice(0, 5);
-            
-        console.log('Recent news selected:', recentNews);
-        console.log('Extended news selected:', extendedNews);
         
         // Track keyword frequencies separately for each timeframe
         const dayKeywordFrequency = {};
@@ -303,26 +297,51 @@ const Analysis = {
             return acc + Math.abs(day.marketChange);
         }, 0) / recentData.length;
         
-        // Calculate sentiment trend
-        const sentimentTrend = recentData.slice(-3).reduce((acc, day) => {
+        // Calculate sentiment trend for recent days
+        const recentSentimentTrend = recentData.slice(-3).reduce((acc, day) => {
             return acc + day.sentimentScore;
         }, 0) / 3;
         
-        // Enhanced prediction model
+        // Calculate longer-term sentiment trend
+        const weekSentimentTrend = extendedData.slice(-7).reduce((acc, day) => {
+            return acc + day.sentimentScore;
+        }, 0) / 7;
+        
+        // Calculate market momentum (direction and strength of recent price movements)
+        const marketMomentum = recentData.slice(-3).reduce((acc, day) => {
+            return acc + day.marketChange;
+        }, 0);
+        
+        // Calculate sector concentration (how focused the news is on specific sectors)
+        const sectorConcentration = extendedNews.reduce((acc, article) => {
+            return acc + (article.relatedCompanies?.length || 0);
+        }, 0) / extendedNews.length;
+        
+        // Enhanced next-day prediction model
         const nextDayPrediction = {
             timeframe: "Next Day",
             direction: recentSentiment > 0.1 ? 'UP' : recentSentiment < -0.1 ? 'DOWN' : 'NEUTRAL',
             confidence: Math.min(Math.abs(recentSentiment * 100), 100),
             sentiment: recentSentiment,
-            explanation: `Market sentiment is ${recentSentiment > 0.1 ? 'positive' : recentSentiment < -0.1 ? 'negative' : 'neutral'} and ${sentimentTrend > 0.1 ? 'improving' : sentimentTrend < -0.1 ? 'declining' : 'stable'}.\n\nKey stories:\n• ${recentNews.slice(0, 2).map(n => n.title).join('\n• ')}\n\nTrending topics:\n${dayKeywords.join(', ')}`
+            explanation: `Next-day predictions are tactical, focusing on immediate market conditions and momentum.\n\n` +
+                       `Based on immediate market conditions:\n` +
+                       `• Market sentiment is ${recentSentiment > 0.1 ? 'positive' : recentSentiment < -0.1 ? 'negative' : 'neutral'}\n` +
+                       `• Recent trend is ${recentSentimentTrend > 0.1 ? 'improving' : recentSentimentTrend < -0.1 ? 'declining' : 'stable'}\n` +
+                       `• Market momentum is ${marketMomentum > 0 ? 'positive' : marketMomentum < 0 ? 'negative' : 'neutral'}`
         };
         
+        // Enhanced next-week prediction model
         const nextWeekPrediction = {
             timeframe: "Next Week",
             direction: extendedSentiment > 0.1 ? 'UP' : extendedSentiment < -0.1 ? 'DOWN' : 'NEUTRAL',
             confidence: Math.min(Math.abs(extendedSentiment * 100), 100),
             sentiment: extendedSentiment,
-            explanation: `Market sentiment is ${extendedSentiment > 0.1 ? 'positive' : extendedSentiment < -0.1 ? 'negative' : 'neutral'} with ${volatility > 5 ? 'high' : volatility > 2 ? 'moderate' : 'low'} volatility.\n\nKey stories:\n• ${extendedNews.slice(0, 2).map(n => n.title).join('\n• ')}\n\nTrending topics:\n${weekKeywords.join(', ')}`
+            explanation: `Next-week predictions are strategic, considering broader trends, volatility patterns, and sector-specific factors.\n\n` +
+                       `Based on longer-term market analysis:\n` +
+                       `• Overall market sentiment is ${extendedSentiment > 0.1 ? 'positive' : extendedSentiment < -0.1 ? 'negative' : 'neutral'}\n` +
+                       `• Weekly trend is ${weekSentimentTrend > 0.1 ? 'improving' : weekSentimentTrend < -0.1 ? 'declining' : 'stable'}\n` +
+                       `• Market volatility is ${volatility > 5 ? 'high' : volatility > 2 ? 'moderate' : 'low'}\n` +
+                       `• Sector focus is ${sectorConcentration > 3 ? 'broad' : 'concentrated'}`
         };
         
         return [nextDayPrediction, nextWeekPrediction];
@@ -376,14 +395,5 @@ const Analysis = {
         explanation += `Confidence level: ${confidence}%.`;
         
         return explanation;
-    },
-    
-    // Stock focus groups
-    stockFocusGroups: {
-        'Tech Giants': ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'NFLX'],
-        'Financial Services': ['JPM', 'BAC', 'GS', 'MA', 'V'],
-        'Energy & Industrial': ['XOM', 'CVX', 'BP', 'BA', 'LMT'],
-        'Consumer Goods': ['WMT', 'TGT', 'KO', 'PEP'],
-        'Entertainment': ['DIS', 'NFLX', 'CMCSA', 'PARA']
     }
 }; 

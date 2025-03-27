@@ -10,8 +10,14 @@ let state = {
     analysisResults: null,
     isLoading: false,
     dateRange: 7,
-    selectedFocusGroup: '',
-    focusGroups: Analysis.stockFocusGroups
+    tickerGroup: 'all',
+    tickerGroups: {
+        all: ['SPY'],
+        tech: ['AAPL', 'MSFT', 'GOOGL', 'META', 'NVDA'],
+        finance: ['JPM', 'BAC', 'GS', 'V', 'MA'],
+        retail: ['AMZN', 'WMT', 'TGT', 'KO', 'PEP'],
+        health: ['JNJ', 'PFE', 'UNH']
+    }
 };
 
 // Initialize the application
@@ -29,29 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Handle focus group radio changes
-    document.querySelectorAll('input[name="focusGroup"]').forEach(radio => {
+    // Handle ticker group radio changes
+    document.querySelectorAll('input[name="tickerGroup"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            state.selectedFocusGroup = e.target.value;
+            state.tickerGroup = e.target.value;
         });
-    });
-    
-    // Update focus group selector
-    const focusGroupSelect = document.getElementById('focusGroup');
-    focusGroupSelect.innerHTML = ''; // Clear existing options
-    
-    // Add default option
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'All Stocks';
-    focusGroupSelect.appendChild(defaultOption);
-    
-    // Add focus group options
-    Object.entries(state.focusGroups).forEach(([groupName, stocks]) => {
-        const option = document.createElement('option');
-        option.value = groupName;
-        option.textContent = `${groupName} (${stocks.join(', ')})`;
-        focusGroupSelect.appendChild(option);
     });
 });
 
@@ -71,12 +59,12 @@ async function handleAnalyzeClick() {
             API.fetchMarketData(state.dateRange)
         ]);
         
-        // Filter news data based on selected focus group
-        const filteredNewsData = !state.selectedFocusGroup 
+        // Filter news data based on selected ticker group
+        const filteredNewsData = state.tickerGroup === 'all' 
             ? newsData 
             : newsData.filter(article => {
-                const stocks = state.focusGroups[state.selectedFocusGroup];
-                return article.relatedCompanies.some(ticker => stocks.includes(ticker));
+                const tickers = state.tickerGroups[state.tickerGroup];
+                return article.relatedCompanies.some(ticker => tickers.includes(ticker));
             });
         
         // Store data in state
@@ -264,7 +252,14 @@ function updateAnalysisSummary(analysisResults, newsData) {
     
     // Update stock group focus
     const stockGroupElement = document.getElementById('stockGroupValue');
-    stockGroupElement.textContent = state.selectedFocusGroup || 'All Stocks';
+    const groupLabels = {
+        all: 'All Stocks',
+        tech: 'Technology',
+        finance: 'Financial',
+        retail: 'Retail & Consumer',
+        health: 'Healthcare'
+    };
+    stockGroupElement.textContent = groupLabels[state.tickerGroup];
     
     // Calculate and update average sentiment score
     const avgSentiment = newsData.reduce((sum, article) => sum + article.sentimentScore, 0) / totalArticles;

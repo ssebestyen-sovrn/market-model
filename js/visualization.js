@@ -177,8 +177,8 @@ const Visualization = {
         });
         
         // Create market trend chart
-        const marketTrendCtx = document.getElementById('marketTrendChart').getContext('2d');
-        window.marketTrendChart = new Chart(marketTrendCtx, {
+        const trendCtx = document.getElementById('marketTrendChart').getContext('2d');
+        window.marketTrendChart = new Chart(trendCtx, {
             type: 'line',
             data: {
                 labels: [],
@@ -186,18 +186,17 @@ const Visualization = {
                     {
                         label: 'S&P 500 Value',
                         data: [],
-                        borderColor: '#4cc9f0',
+                        borderColor: '#4cc9f0', // Using our secondary color
                         backgroundColor: 'rgba(76, 201, 240, 0.2)',
                         tension: 0.1,
                         fill: true,
                         pointHoverRadius: 4,
-                        pointHoverBackgroundColor: '#4cc9f0',
-                        yAxisID: 'y'
+                        pointHoverBackgroundColor: '#4cc9f0'
                     },
                     {
                         label: 'News Sentiment',
                         data: [],
-                        borderColor: '#4361ee',
+                        borderColor: '#4361ee', // Using our primary color
                         backgroundColor: 'rgba(67, 97, 238, 0)',
                         borderDash: [5, 5],
                         tension: 0.1,
@@ -256,7 +255,7 @@ const Visualization = {
                     },
                     tooltip: {
                         animation: {
-                            duration: 0
+                            duration: 0 // Disable tooltip animations
                         },
                         backgroundColor: 'rgba(255, 255, 255, 0.9)',
                         titleColor: '#2b2d42',
@@ -296,21 +295,17 @@ const Visualization = {
                         position: 'left'
                     },
                     y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
                         title: {
                             display: true,
                             text: 'Sentiment Score'
                         },
-                        min: -1,
-                        max: 1,
+                        position: 'right',
                         grid: {
                             drawOnChartArea: false
                         },
                         ticks: {
-                            precision: 2,
-                            count: 5
+                            precision: 2,  // Show 2 decimal places for better readability
+                            count: 5       // Display approximately 5 tick marks
                         }
                     }
                 }
@@ -425,17 +420,25 @@ const Visualization = {
         const marketValues = filteredData.map(d => d.marketValue);
         const sentimentScores = filteredData.map(d => d.sentimentScore);
         
+        // Use fixed range for sentiment score axis (-0.25 to 0.25)
+        const minSentiment = -0.25;
+        const maxSentiment = 0.25;
+        
         window.marketTrendChart.data.labels = trendLabels;
         window.marketTrendChart.data.datasets[0].data = marketValues;
         window.marketTrendChart.data.datasets[1].data = sentimentScores;
         
-        // Update the y1 axis (sentiment score)
+        // Update the y1 axis (sentiment score) to use the fixed range
+        window.marketTrendChart.options.scales.y1.min = minSentiment;
+        window.marketTrendChart.options.scales.y1.max = maxSentiment;
+        
+        // Add more tick marks for better readability
         window.marketTrendChart.options.scales.y1.ticks = {
             count: 5,
             precision: 2
         };
         
-        // Show the sentiment range in the axis title
+        // Show the fixed sentiment range in the axis title
         window.marketTrendChart.options.scales.y1.title = {
             display: true,
             text: 'Sentiment Score',
