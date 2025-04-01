@@ -11,6 +11,7 @@ let state = {
     isLoading: false,
     dateRange: 7,
     tickerGroup: 'all',
+    useSampleData: false,
     tickerGroups: {
         all: ['SPY'],
         tech: ['AAPL', 'MSFT', 'GOOGL', 'META', 'NVDA'],
@@ -41,6 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
             state.tickerGroup = e.target.value;
         });
     });
+    
+    // Handle data source radio changes
+    document.querySelectorAll('input[name="dataSource"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.useSampleData = e.target.value === 'sample';
+        });
+    });
 });
 
 /**
@@ -53,11 +61,19 @@ async function handleAnalyzeClick() {
         // Update UI to show loading state
         setLoadingState(true);
         
-        // Fetch data with selected date range
-        const [newsData, marketData] = await Promise.all([
-            API.fetchNews(state.dateRange),
-            API.fetchMarketData(state.dateRange)
-        ]);
+        let newsData, marketData;
+        
+        if (state.useSampleData) {
+            // Use sample data - wrapping in Promise.resolve to keep code consistent
+            newsData = await Promise.resolve(API.fallbackToSampleNews(state.dateRange));
+            marketData = await Promise.resolve(API.fallbackToSampleData(state.dateRange));
+        } else {
+            // Fetch data with selected date range
+            [newsData, marketData] = await Promise.all([
+                API.fetchNews(state.dateRange),
+                API.fetchMarketData(state.dateRange)
+            ]);
+        }
         
         // Filter news data based on selected ticker group
         const filteredNewsData = state.tickerGroup === 'all' 
@@ -173,26 +189,33 @@ function updateUI() {
     document.getElementById('resultsSection').classList.remove('d-none');
     
     // Update data source badge
-    const usingSampleMarketData = state.marketData.some(data => data.isSampleData);
-    const usingSampleNewsData = state.newsData.some(data => data.isSampleData);
     const dataSourceBadge = document.getElementById('dataSourceBadge');
     
-    if (usingSampleMarketData && usingSampleNewsData) {
-        dataSourceBadge.textContent = 'Sample Data (All)';
+    if (state.useSampleData) {
+        dataSourceBadge.textContent = 'Sample Data';
         dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
         dataSourceBadge.title = 'Using simulated market and news data';
-    } else if (usingSampleMarketData) {
-        dataSourceBadge.textContent = 'Sample Data (Market)';
-        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
-        dataSourceBadge.title = 'Using real news but simulated market data';
-    } else if (usingSampleNewsData) {
-        dataSourceBadge.textContent = 'Sample Data (News)';
-        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
-        dataSourceBadge.title = 'Using real market but simulated news data';
     } else {
-        dataSourceBadge.textContent = 'Live Data';
-        dataSourceBadge.className = 'badge rounded-pill ms-2 bg-success text-white';
-        dataSourceBadge.title = 'Using real-time market and news data';
+        const usingSampleMarketData = state.marketData.some(data => data.isSampleData);
+        const usingSampleNewsData = state.newsData.some(data => data.isSampleData);
+        
+        if (usingSampleMarketData && usingSampleNewsData) {
+            dataSourceBadge.textContent = 'Sample Data (All)';
+            dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+            dataSourceBadge.title = 'Using simulated market and news data';
+        } else if (usingSampleMarketData) {
+            dataSourceBadge.textContent = 'Sample Data (Market)';
+            dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+            dataSourceBadge.title = 'Using real news but simulated market data';
+        } else if (usingSampleNewsData) {
+            dataSourceBadge.textContent = 'Sample Data (News)';
+            dataSourceBadge.className = 'badge rounded-pill ms-2 bg-warning text-dark';
+            dataSourceBadge.title = 'Using real market but simulated news data';
+        } else {
+            dataSourceBadge.textContent = 'Live Data';
+            dataSourceBadge.className = 'badge rounded-pill ms-2 bg-success text-white';
+            dataSourceBadge.title = 'Using real-time market and news data';
+        }
     }
     
     // Update analysis summary metrics

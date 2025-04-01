@@ -36,7 +36,7 @@
                             This tool analyzes news content and SP500 market data to identify correlations and potential predictive patterns.
                         </p>
                         <div class="row mb-3">
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label d-block">Analysis Period</label>
                                 <div class="btn-group w-100" role="group" aria-label="Analysis period selection">
                                     <input type="radio" class="btn-check" name="dateRange" id="dateRange7" value="7" checked>
@@ -47,6 +47,16 @@
                                     
                                     <input type="radio" class="btn-check" name="dateRange" id="dateRange30" value="30">
                                     <label class="btn btn-outline-primary" for="dateRange30">30 Days</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label d-block">Data Source</label>
+                                <div class="btn-group w-100" role="group" aria-label="Data source selection">
+                                    <input type="radio" class="btn-check" name="dataSource" id="dataSourceLive" value="live" checked>
+                                    <label class="btn btn-outline-primary" for="dataSourceLive">Live Data</label>
+                                    
+                                    <input type="radio" class="btn-check" name="dataSource" id="dataSourceSample" value="sample">
+                                    <label class="btn btn-outline-primary" for="dataSourceSample">Sample Data</label>
                                 </div>
                             </div>
                             <div class="col-md-12">
