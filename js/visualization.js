@@ -318,8 +318,9 @@ const Visualization = {
      * @param {Object} results Analysis results
      * @param {Array} newsData News data
      * @param {Array} marketData Market data
+     * @param {number} selectedDateRange The user-selected date range (7, 14, or 30 days)
      */
-    updateCharts: (results, newsData, marketData) => {
+    updateCharts: (results, newsData, marketData, selectedDateRange = 7) => {
         // Check if we're using sample data
         const usingSampleMarketData = marketData.some(data => data.isSampleData);
         const usingSampleNewsData = newsData.some(data => data.isSampleData);
@@ -335,10 +336,21 @@ const Visualization = {
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         };
         
-        // Prepare data for correlation chart
-        const labels = sortedCorrelationData.map(d => formatDate(d.date));
-        const sentimentData = sortedCorrelationData.map(d => d.sentimentScore);
-        const marketChangeData = sortedCorrelationData.map(d => d.marketChange);
+        // Prepare data for correlation chart - ensure we respect the selected date range
+        // Limit the number of data points shown based on the selected date range
+        const determineDataPoints = (data, dateRange) => {
+            if (data.length <= dateRange) {
+                return data; // Return all data if we have less than or equal to the date range
+            }
+            return data.slice(-dateRange); // Return the last X days based on date range
+        };
+        
+        // Get data for the selected date range
+        const rangeFilteredData = determineDataPoints(sortedCorrelationData, selectedDateRange);
+        
+        const labels = rangeFilteredData.map(d => formatDate(d.date));
+        const sentimentData = rangeFilteredData.map(d => d.sentimentScore);
+        const marketChangeData = rangeFilteredData.map(d => d.marketChange);
         
         // Calculate correlation trend line using moving average
         const calculateCorrelationTrend = (sentimentData, marketChangeData, window = 3) => {
@@ -389,6 +401,22 @@ const Visualization = {
         window.correlationChart.data.datasets[1].data = marketChangeData;
         window.correlationChart.data.datasets[2].data = correlationTrend;
         
+        // Adjust x-axis tick display based on date range to prevent overcrowding
+        if (selectedDateRange > 14) {
+            window.correlationChart.options.scales.x.ticks = {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: 10 // Show fewer ticks for longer date ranges
+            };
+        } else {
+            window.correlationChart.options.scales.x.ticks = {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false
+            };
+        }
+        
         // Add correlation coefficient to chart title
         const correlationCoefficient = results.correlations.sentimentToNextDayMarket;
         const correlationText = Math.abs(correlationCoefficient) < 0.2 ? 'Weak' :
@@ -411,10 +439,15 @@ const Visualization = {
             new Date(a.date) - new Date(b.date)
         );
         
+        // Get the appropriate data for the selected date range
+        const trendFilteredData = determineDataPoints(sortedData, selectedDateRange);
+        
         // Limit the number of data points to prevent overcrowding
-        const maxDataPoints = 15;
-        const step = sortedData.length > maxDataPoints ? Math.floor(sortedData.length / maxDataPoints) : 1;
-        const filteredData = sortedData.filter((_, index) => index % step === 0);
+        const maxDataPoints = selectedDateRange > 14 ? 20 : 15;
+        const step = trendFilteredData.length > maxDataPoints ? Math.floor(trendFilteredData.length / maxDataPoints) : 1;
+        const filteredData = step > 1 
+            ? trendFilteredData.filter((_, index) => index % step === 0) 
+            : trendFilteredData;
         
         const trendLabels = filteredData.map(d => formatDate(d.date));
         const marketValues = filteredData.map(d => d.marketValue);
@@ -438,6 +471,22 @@ const Visualization = {
             precision: 2
         };
         
+        // Adjust x-axis tick display based on date range
+        if (selectedDateRange > 14) {
+            window.marketTrendChart.options.scales.x.ticks = {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: 10 // Show fewer ticks for longer date ranges
+            };
+        } else {
+            window.marketTrendChart.options.scales.x.ticks = {
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false
+            };
+        }
+        
         // Show the fixed sentiment range in the axis title
         window.marketTrendChart.options.scales.y1.title = {
             display: true,
@@ -447,16 +496,22 @@ const Visualization = {
             }
         };
         
+        // Update chart title to show the date range
+        let periodText = selectedDateRange === 7 ? 'Week' : 
+                        selectedDateRange === 14 ? '2 Weeks' : 
+                        selectedDateRange === 30 ? 'Month' : 
+                        `${selectedDateRange} Days`;
+        
         // If we're using sample data, add visual indicators
         if (usingSampleMarketData || usingSampleNewsData) {
             // Add a note to the chart title
-            let titleText = 'Market Trend';
+            let titleText = `Market Trend (Last ${periodText})`;
             if (usingSampleMarketData && usingSampleNewsData) {
-                titleText += ' (Simulated Data)';
+                titleText += ' - Simulated Data';
             } else if (usingSampleMarketData) {
-                titleText += ' (Simulated Market Data)';
+                titleText += ' - Simulated Market Data';
             } else {
-                titleText += ' (Simulated News Data)';
+                titleText += ' - Simulated News Data';
             }
             
             window.marketTrendChart.options.plugins.title = {
@@ -489,7 +544,7 @@ const Visualization = {
             // Reset to normal style for real data
             window.marketTrendChart.options.plugins.title = {
                 display: true,
-                text: 'Market Value vs News Sentiment Over Time',
+                text: `Market Value vs News Sentiment (Last ${periodText})`,
                 font: {
                     size: 14
                 }
@@ -646,23 +701,26 @@ const Visualization = {
         const predictionsContainer = document.getElementById('predictionsContainer');
         predictionsContainer.innerHTML = '';
         
+        // Determine column size based on number of predictions
+        const colSize = predictions.length === 3 ? 'col-md-4' : 'col-md-6';
+        
         predictions.forEach(prediction => {
-            const directionClass = `prediction-${prediction.direction}`;
-            const directionIcon = prediction.direction === 'up' ? '↑' : 
-                                 (prediction.direction === 'down' ? '↓' : '→');
+            const directionClass = `prediction-${prediction.direction.toLowerCase()}`;
+            const directionIcon = prediction.direction === 'UP' ? '↑' : 
+                                 (prediction.direction === 'DOWN' ? '↓' : '→');
             
             const sentimentValue = parseFloat(prediction.sentiment || 0).toFixed(2);
             const formattedSentiment = sentimentValue >= 0 ? `+${sentimentValue}` : sentimentValue;
             
             const predictionCard = document.createElement('div');
-            predictionCard.className = `col-md-6`;
+            predictionCard.className = `${colSize}`;
             predictionCard.innerHTML = `
                 <div class="card prediction-card ${directionClass} h-100">
                     <div class="card-body">
                         <h5 class="card-title">
                             ${prediction.timeframe} Prediction: 
-                            <span class="prediction-${prediction.direction}">
-                                ${directionIcon} ${prediction.direction.toUpperCase()}
+                            <span class="prediction-${prediction.direction.toLowerCase()}">
+                                ${directionIcon} ${prediction.direction}
                             </span>
                         </h5>
                         <div class="d-flex justify-content-between align-items-center mb-3">

@@ -198,8 +198,8 @@ function updateUI() {
     // Update analysis summary metrics
     updateAnalysisSummary(state.analysisResults, state.newsData);
     
-    // Update charts
-    Visualization.updateCharts(state.analysisResults, state.newsData, state.marketData);
+    // Update charts with the selected date range
+    Visualization.updateCharts(state.analysisResults, state.newsData, state.marketData, state.dateRange);
     
     // Render news cards
     Visualization.renderNewsCards(state.newsData);
